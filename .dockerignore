@@ -1,0 +1,14 @@
+.git
+.idea
+.m2-cache
+.next
+.vinext
+.wrangler
+backend/data
+backend/target
+backend/uploads
+dist
+node_modules
+outputs
+work
+*.log
