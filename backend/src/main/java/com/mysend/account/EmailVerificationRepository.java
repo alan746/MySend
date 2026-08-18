@@ -59,6 +59,12 @@ public class EmailVerificationRepository {
                 .update() == 1;
     }
 
+    public void deleteExpired(Instant now) {
+        jdbc.sql("delete from email_verifications where expires_at_ms <= :now")
+                .param("now", now.toEpochMilli())
+                .update();
+    }
+
     private static EmailVerification mapVerification(
             ResultSet resultSet,
             int rowNumber
