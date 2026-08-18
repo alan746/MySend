@@ -173,6 +173,30 @@ public class RoomRepository {
                 .update();
     }
 
+    public List<Room> findClosedBefore(Instant cutoff) {
+        return jdbc.sql("""
+                        select * from rooms
+                        where (closed_at_ms is not null and closed_at_ms < :cutoff)
+                           or expires_at_ms < :cutoff
+                        order by expires_at_ms
+                        """)
+                .param("cutoff", cutoff.toEpochMilli())
+                .query(RoomRepository::mapRoom)
+                .list();
+    }
+
+    public boolean deleteByIdIfClosedBefore(String id, Instant cutoff) {
+        return jdbc.sql("""
+                        delete from rooms
+                        where id = :id
+                          and ((closed_at_ms is not null and closed_at_ms < :cutoff)
+                               or expires_at_ms < :cutoff)
+                        """)
+                .param("id", id)
+                .param("cutoff", cutoff.toEpochMilli())
+                .update() == 1;
+    }
+
     public boolean adjustFileBytes(String id, long delta, long maximumBytes) {
         return jdbc.sql("""
                         update rooms
