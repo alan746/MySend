@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.Locale;
 
@@ -36,6 +37,7 @@ class GuestRoomFlowTest {
     @Test
     void guestCreatesARoomWithoutSigningIn() throws Exception {
         mvc.perform(post("/api/rooms")
+                        .with(browserRequest())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -85,6 +87,7 @@ class GuestRoomFlowTest {
 
     private String createRoom(String deviceToken) throws Exception {
         MvcResult result = mvc.perform(post("/api/rooms")
+                        .with(browserRequest())
                         .cookie(new Cookie("mysend_device", deviceToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -102,6 +105,7 @@ class GuestRoomFlowTest {
 
     private Cookie enterRoom(String accessCode) throws Exception {
         MvcResult result = mvc.perform(post("/api/rooms/enter")
+                        .with(browserRequest())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -116,5 +120,13 @@ class GuestRoomFlowTest {
             throw new AssertionError("Missing room access cookie " + cookieName);
         }
         return cookie;
+    }
+
+    private static RequestPostProcessor browserRequest() {
+        return request -> {
+            request.addHeader("Origin", "http://localhost:3000");
+            request.addHeader("X-Requested-With", "MySendWeb");
+            return request;
+        };
     }
 }
