@@ -32,8 +32,6 @@ import java.util.List;
 @RequestMapping("/api/rooms")
 public class RoomController {
 
-    private static final String ROOM_ACCESS_COOKIE = "mysend_room_access";
-
     private final RoomService service;
     private final DeviceIdentityService identities;
     private final AppProperties properties;
@@ -74,7 +72,7 @@ public class RoomController {
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
                 CookieSupport.httpOnly(
-                        ROOM_ACCESS_COOKIE,
+                        RoomAccessCookie.name(entered.room().accessCode()),
                         entered.token(),
                         duration.isNegative() ? Duration.ZERO : duration,
                         properties.cookieSecure()
@@ -104,7 +102,7 @@ public class RoomController {
         OwnerIdentity owner = identities.resolve(request, response);
         String token = roomToken != null
                 ? roomToken
-                : CookieSupport.read(request, ROOM_ACCESS_COOKIE).orElse(null);
+                : RoomAccessCookie.read(request, accessCode).orElse(null);
         Room room = service.getAuthorized(accessCode, owner, token);
         return RoomView.from(room, room.isOwnedBy(owner.ownerKey()));
     }
@@ -120,7 +118,7 @@ public class RoomController {
         OwnerIdentity owner = identities.resolve(request, response);
         String token = roomToken != null
                 ? roomToken
-                : CookieSupport.read(request, ROOM_ACCESS_COOKIE).orElse(null);
+                : RoomAccessCookie.read(request, accessCode).orElse(null);
         Room room = service.updateClipboard(
                 accessCode,
                 owner,
