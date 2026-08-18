@@ -4,7 +4,6 @@ import {
   ChangeEvent,
   DragEvent,
   FormEvent,
-  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -31,33 +30,34 @@ export function RoomExperience({ code }: RoomExperienceProps) {
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  const loadRoom = useCallback(async () => {
-    const loaded = await api<Room>(`/api/rooms/${encodeURIComponent(code)}`);
-    const loadedFiles = await api<RoomFile[]>(
-      `/api/rooms/${encodeURIComponent(code)}/files`,
-    );
-    setRoom(loaded);
-    setClipboard(loaded.clipboardText);
-    setFiles(loadedFiles);
-    setNeedsEntry(false);
-  }, [code]);
-
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    loadRoom()
-      .catch((caught) => {
+
+    async function loadRoom() {
+      try {
+        const [loaded, loadedFiles] = await Promise.all([
+          api<Room>(`/api/rooms/${encodeURIComponent(code)}`),
+          api<RoomFile[]>(`/api/rooms/${encodeURIComponent(code)}/files`),
+        ]);
+        if (!active) return;
+        setRoom(loaded);
+        setClipboard(loaded.clipboardText);
+        setFiles(loadedFiles);
+        setNeedsEntry(false);
+      } catch (caught) {
         if (!active) return;
         setNeedsEntry(true);
         setError(messageOf(caught));
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+
+    void loadRoom();
     return () => {
       active = false;
     };
-  }, [loadRoom]);
+  }, [code]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);

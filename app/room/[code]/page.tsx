@@ -12,5 +12,6 @@ export default async function RoomPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  return <RoomExperience code={code.toUpperCase()} />;
+  const normalizedCode = code.toUpperCase();
+  return <RoomExperience key={normalizedCode} code={normalizedCode} />;
 }
