@@ -1,6 +1,7 @@
 package com.mysend.room;
 
 import com.mysend.account.AppSessionRepository;
+import com.mysend.account.AuthenticationAttemptRepository;
 import com.mysend.account.EmailVerificationRepository;
 import com.mysend.file.FileStore;
 import com.mysend.file.RoomFile;
@@ -26,6 +27,7 @@ public class RoomCleanupJob {
     private final RoomAccessTokenRepository accessTokens;
     private final AppSessionRepository sessions;
     private final EmailVerificationRepository verifications;
+    private final AuthenticationAttemptRepository authenticationAttempts;
     private final Clock clock;
 
     public RoomCleanupJob(
@@ -35,6 +37,7 @@ public class RoomCleanupJob {
             RoomAccessTokenRepository accessTokens,
             AppSessionRepository sessions,
             EmailVerificationRepository verifications,
+            AuthenticationAttemptRepository authenticationAttempts,
             Clock clock
     ) {
         this.rooms = rooms;
@@ -43,6 +46,7 @@ public class RoomCleanupJob {
         this.accessTokens = accessTokens;
         this.sessions = sessions;
         this.verifications = verifications;
+        this.authenticationAttempts = authenticationAttempts;
         this.clock = clock;
     }
 
@@ -54,6 +58,7 @@ public class RoomCleanupJob {
         accessTokens.deleteExpired(now);
         sessions.deleteExpired(now);
         verifications.deleteExpired(now);
+        authenticationAttempts.deleteOlderThan(now.minus(Duration.ofDays(1)));
         rooms.findClosedBefore(roomCutoff).forEach(room -> deleteRoom(room, roomCutoff));
     }
 

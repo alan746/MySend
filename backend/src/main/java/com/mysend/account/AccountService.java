@@ -18,8 +18,17 @@ import java.util.UUID;
 @Service
 public class AccountService {
 
+    static final Duration VERIFICATION_RESEND_COOLDOWN = Duration.ofSeconds(60);
+    static final Duration VERIFICATION_SEND_WINDOW = Duration.ofHours(1);
+    static final int VERIFICATION_SEND_LIMIT = 5;
+    static final Duration VERIFICATION_FAILURE_WINDOW = Duration.ofMinutes(10);
+    static final int VERIFICATION_FAILURE_LIMIT = 5;
+    static final Duration LOGIN_FAILURE_WINDOW = Duration.ofMinutes(15);
+    static final int LOGIN_FAILURE_LIMIT = 5;
+
     private final AccountRepository accounts;
     private final EmailVerificationRepository verifications;
+    private final AuthenticationAttemptRepository attempts;
     private final VerificationMailer mailer;
     private final AccountSessionService sessions;
     private final PasswordEncoder passwordEncoder;
@@ -29,6 +38,7 @@ public class AccountService {
     public AccountService(
             AccountRepository accounts,
             EmailVerificationRepository verifications,
+            AuthenticationAttemptRepository attempts,
             VerificationMailer mailer,
             AccountSessionService sessions,
             PasswordEncoder passwordEncoder,
@@ -37,6 +47,7 @@ public class AccountService {
     ) {
         this.accounts = accounts;
         this.verifications = verifications;
+        this.attempts = attempts;
         this.mailer = mailer;
         this.sessions = sessions;
         this.passwordEncoder = passwordEncoder;
@@ -55,6 +66,8 @@ public class AccountService {
             );
         }
         Instant now = clock.instant();
+        enforceVerificationSendLimit(email, now);
+        attempts.record(email, AuthenticationAttemptType.VERIFICATION_SEND, now);
         String id = UUID.randomUUID().toString();
         String code = "%06d".formatted(random.nextInt(1_000_000));
         EmailVerification verification = new EmailVerification(
@@ -93,15 +106,25 @@ public class AccountService {
             );
         }
         Instant now = clock.instant();
-        EmailVerification verification = verifications.findLatest(email)
-                .orElseThrow(AccountService::invalidCode);
-        if (!verification.canUseAt(now)
+        enforceFailureLimit(
+                email,
+                AuthenticationAttemptType.VERIFICATION_FAILURE,
+                now.minus(VERIFICATION_FAILURE_WINDOW),
+                VERIFICATION_FAILURE_LIMIT,
+                "VERIFICATION_ATTEMPTS_EXCEEDED",
+                "Too many incorrect codes. Try again in 10 minutes"
+        );
+        EmailVerification verification = verifications.findLatest(email).orElse(null);
+        if (verification == null
+                || !verification.canUseAt(now)
                 || !verification.codeHash().equals(
                         Hashing.sha256(verification.id() + ":" + code)
                 )) {
+            attempts.record(email, AuthenticationAttemptType.VERIFICATION_FAILURE, now);
             throw invalidCode();
         }
         if (!verifications.consume(verification.id(), now)) {
+            attempts.record(email, AuthenticationAttemptType.VERIFICATION_FAILURE, now);
             throw invalidCode();
         }
         Account account = new Account(
@@ -115,16 +138,60 @@ public class AccountService {
                 now
         );
         accounts.insert(account);
+        attempts.clear(email, AuthenticationAttemptType.VERIFICATION_FAILURE);
         return new AuthenticatedAccount(account, sessions.issue(account));
     }
 
     public AuthenticatedAccount login(String emailValue, String password) {
-        Account account = accounts.findByEmail(normalizeEmail(emailValue))
-                .orElseThrow(AccountService::invalidCredentials);
-        if (!passwordEncoder.matches(password, account.passwordHash())) {
+        String email = normalizeEmail(emailValue);
+        Instant now = clock.instant();
+        enforceFailureLimit(
+                email,
+                AuthenticationAttemptType.LOGIN_FAILURE,
+                now.minus(LOGIN_FAILURE_WINDOW),
+                LOGIN_FAILURE_LIMIT,
+                "LOGIN_RATE_LIMITED",
+                "Too many login attempts. Try again in 15 minutes"
+        );
+        Account account = accounts.findByEmail(email).orElse(null);
+        if (account == null || !passwordEncoder.matches(password, account.passwordHash())) {
+            attempts.record(email, AuthenticationAttemptType.LOGIN_FAILURE, now);
             throw invalidCredentials();
         }
+        attempts.clear(email, AuthenticationAttemptType.LOGIN_FAILURE);
         return new AuthenticatedAccount(account, sessions.issue(account));
+    }
+
+    private void enforceVerificationSendLimit(String email, Instant now) {
+        attempts.findLatest(email, AuthenticationAttemptType.VERIFICATION_SEND)
+                .filter(lastAttempt -> lastAttempt.plus(VERIFICATION_RESEND_COOLDOWN).isAfter(now))
+                .ifPresent(lastAttempt -> {
+                    throw rateLimit(
+                            "VERIFICATION_COOLDOWN",
+                            "Wait 60 seconds before requesting another code"
+                    );
+                });
+        enforceFailureLimit(
+                email,
+                AuthenticationAttemptType.VERIFICATION_SEND,
+                now.minus(VERIFICATION_SEND_WINDOW),
+                VERIFICATION_SEND_LIMIT,
+                "VERIFICATION_RATE_LIMITED",
+                "Too many verification emails. Try again in one hour"
+        );
+    }
+
+    private void enforceFailureLimit(
+            String email,
+            AuthenticationAttemptType type,
+            Instant since,
+            int limit,
+            String code,
+            String message
+    ) {
+        if (attempts.countSince(email, type, since) >= limit) {
+            throw rateLimit(code, message);
+        }
     }
 
     public static String normalizeEmail(String email) {
@@ -145,6 +212,10 @@ public class AccountService {
                 "INVALID_CREDENTIALS",
                 "Email or password is incorrect"
         );
+    }
+
+    private static ApiException rateLimit(String code, String message) {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, code, message);
     }
 
     public record VerificationResult(
