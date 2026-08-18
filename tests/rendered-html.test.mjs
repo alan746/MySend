@@ -37,6 +37,15 @@ test("server-renders the MySend create and join experience", async () => {
   assert.doesNotMatch(html, /react-loading-skeleton/i);
 });
 
+test("server-renders a room-specific loading state", async () => {
+  const response = await render("/room/4821k");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /Opening ShareRoom\s*(?:<!-- -->)?\s*4821K/);
+  assert.match(html, /role="status"/);
+});
+
 test("keeps API contracts and metadata product-specific", async () => {
   const [layout, api, packageJson] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
