@@ -51,7 +51,51 @@ docker compose up --build
 
 ## Deployment
 
-Deploy the web client and API independently. Build the web client with
-`NEXT_PUBLIC_API_BASE_URL` set to the public API origin. The API container
-expects PostgreSQL, a persistent upload directory, and the environment
-variables listed in `backend/.env.example`.
+Deploy the web client and API independently. The web build needs both public
+origins:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+Build and run the API from `backend/Dockerfile`. Mount durable storage at the
+same absolute path supplied as `UPLOAD_DIRECTORY`, use PostgreSQL, and set:
+
+```text
+SPRING_PROFILES_ACTIVE=production
+DATABASE_URL=jdbc:postgresql://database-host:5432/mysend
+DATABASE_USERNAME=mysend
+DATABASE_PASSWORD=<secret>
+WEB_ORIGINS=https://your-domain.com
+APP_BASE_URL=https://your-domain.com
+COOKIE_SECURE=true
+UPLOAD_DIRECTORY=/app/uploads
+STORAGE_PERSISTENT=true
+MAIL_FROM=MySend <send@your-domain.com>
+MAIL_DELIVERY_ENABLED=true
+DEVELOPMENT_CODE_ENABLED=false
+SPRING_MAIL_HOST=<smtp-host>
+SPRING_MAIL_PORT=587
+SPRING_MAIL_USERNAME=<smtp-user>
+SPRING_MAIL_PASSWORD=<secret>
+STRIPE_SECRET_KEY=<secret>
+STRIPE_WEBHOOK_SECRET=<secret>
+STRIPE_PREMIUM_PRICE_ID=<price-id>
+```
+
+Configure Stripe to send subscription events to
+`https://api.your-domain.com/api/billing/webhook`. The production profile
+refuses to start when PostgreSQL, HTTPS cookies and origins, persistent file
+storage, verified email delivery, or Stripe settings are missing. After the API
+starts, use `/actuator/health` as the readiness endpoint.
+
+Pull requests run the same checks used locally:
+
+```bash
+npm ci
+npm run check
+cd backend
+mvn --batch-mode --no-transfer-progress verify
+docker build --tag mysend-api:local .
+```
