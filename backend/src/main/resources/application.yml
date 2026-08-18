@@ -50,6 +50,7 @@ mysend:
   mail-from: ${MAIL_FROM:MySend <no-reply@example.com>}
   mail-delivery-enabled: ${MAIL_DELIVERY_ENABLED:false}
   development-code-enabled: ${DEVELOPMENT_CODE_ENABLED:false}
+  storage-persistent: ${STORAGE_PERSISTENT:false}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

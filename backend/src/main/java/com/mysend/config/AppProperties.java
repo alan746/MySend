@@ -14,6 +14,7 @@ public record AppProperties(
         String mailFrom,
         boolean mailDeliveryEnabled,
         boolean developmentCodeEnabled,
+        boolean storagePersistent,
         Stripe stripe
 ) {
     public record Stripe(
