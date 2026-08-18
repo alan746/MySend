@@ -1,6 +1,6 @@
 package com.mysend.file;
 
-import com.mysend.security.CookieSupport;
+import com.mysend.room.RoomAccessCookie;
 import com.mysend.security.DeviceIdentityService;
 import com.mysend.security.OwnerIdentity;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,8 +25,6 @@ import java.util.List;
 @RequestMapping("/api/rooms/{accessCode}/files")
 public class FileBoardController {
 
-    private static final String ROOM_ACCESS_COOKIE = "mysend_room_access";
-
     private final FileBoardService service;
     private final DeviceIdentityService identities;
 
@@ -45,7 +43,7 @@ public class FileBoardController {
             HttpServletResponse response
     ) {
         OwnerIdentity owner = identities.resolve(request, response);
-        String roomToken = CookieSupport.read(request, ROOM_ACCESS_COOKIE).orElse(null);
+        String roomToken = RoomAccessCookie.read(request, accessCode).orElse(null);
         return service.list(accessCode, owner, roomToken).stream()
                 .map(FileView::from)
                 .toList();
@@ -59,7 +57,7 @@ public class FileBoardController {
             HttpServletResponse response
     ) {
         OwnerIdentity owner = identities.resolve(request, response);
-        String roomToken = CookieSupport.read(request, ROOM_ACCESS_COOKIE).orElse(null);
+        String roomToken = RoomAccessCookie.read(request, accessCode).orElse(null);
         RoomFile stored = service.upload(accessCode, owner, roomToken, file);
         return ResponseEntity.status(201).body(FileView.from(stored));
     }
@@ -72,7 +70,7 @@ public class FileBoardController {
             HttpServletResponse response
     ) {
         OwnerIdentity owner = identities.resolve(request, response);
-        String roomToken = CookieSupport.read(request, ROOM_ACCESS_COOKIE).orElse(null);
+        String roomToken = RoomAccessCookie.read(request, accessCode).orElse(null);
         FileBoardService.Download download = service.download(
                 accessCode,
                 fileId,
