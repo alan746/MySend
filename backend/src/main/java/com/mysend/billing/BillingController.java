@@ -25,12 +25,13 @@ public class BillingController {
 
     @PostMapping("/checkout")
     CheckoutResponse checkout(HttpServletRequest request) {
-        var account = sessions.current(request).orElseThrow(() -> new ApiException(
-                HttpStatus.UNAUTHORIZED,
-                "SIGN_IN_REQUIRED",
-                "Sign in before upgrading to Premium"
-        ));
+        var account = currentAccount(request);
         return new CheckoutResponse(stripe.createCheckout(account));
+    }
+
+    @PostMapping("/portal")
+    CheckoutResponse portal(HttpServletRequest request) {
+        return new CheckoutResponse(stripe.createPortal(currentAccount(request)));
     }
 
     @PostMapping("/webhook")
@@ -43,5 +44,13 @@ public class BillingController {
     }
 
     public record CheckoutResponse(String url) {
+    }
+
+    private com.mysend.account.Account currentAccount(HttpServletRequest request) {
+        return sessions.current(request).orElseThrow(() -> new ApiException(
+                HttpStatus.UNAUTHORIZED,
+                "SIGN_IN_REQUIRED",
+                "Sign in before managing Premium"
+        ));
     }
 }
