@@ -135,6 +135,20 @@ export function SettingsExperience() {
     }
   }
 
+  async function manageBilling() {
+    setBusy(true);
+    setError("");
+    try {
+      const portal = await api<{ url: string }>("/api/billing/portal", {
+        method: "POST",
+      });
+      window.location.assign(portal.url);
+    } catch (caught) {
+      setError(messageOf(caught));
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="settings-page">
       <SiteHeader compact />
@@ -281,16 +295,38 @@ export function SettingsExperience() {
             <span><i className="premium-dot" /> Premium</span>
           </div>
           {account?.plan === "PREMIUM" ? (
-            <div className="current-plan">Premium is active on this account.</div>
+            <>
+              <div className="current-plan">Premium is active on this account.</div>
+              <button
+                className="premium-action"
+                type="button"
+                disabled={busy}
+                onClick={() => void manageBilling()}
+              >
+                Manage billing <span>↗</span>
+              </button>
+            </>
           ) : (
-            <button
-              className="premium-action"
-              type="button"
-              disabled={busy}
-              onClick={() => void upgrade()}
-            >
-              Upgrade to Premium <span>↗</span>
-            </button>
+            <>
+              <button
+                className="premium-action"
+                type="button"
+                disabled={busy || !account}
+                onClick={() => void upgrade()}
+              >
+                Upgrade to Premium <span>↗</span>
+              </button>
+              {account?.billingProfileAvailable && (
+                <button
+                  className="membership-manage"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void manageBilling()}
+                >
+                  View previous billing
+                </button>
+              )}
+            </>
           )}
           {!account && <p className="membership-note">Create or sign in to upgrade.</p>}
         </article>

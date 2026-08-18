@@ -119,7 +119,8 @@ public class AccountController {
             int activeRoomLimit,
             int roomMinutes,
             int clipboardCharacters,
-            long roomFileBytes
+            long roomFileBytes,
+            boolean billingProfileAvailable
     ) {
         static AccountView from(Account account) {
             var limits = account.plan().limits();
@@ -130,7 +131,8 @@ public class AccountController {
                     limits.activeRooms(),
                     limits.maximumLifetimeMinutes(),
                     limits.clipboardCharacters(),
-                    limits.roomFileBytes()
+                    limits.roomFileBytes(),
+                    account.stripeCustomerId() != null
             );
         }
     }

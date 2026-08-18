@@ -64,32 +64,40 @@ public class AccountRepository {
             String accountId,
             String customerId,
             String subscriptionId,
-            Instant now
+            Instant eventCreatedAt
     ) {
         jdbc.sql("""
                         update accounts
                         set plan = 'PREMIUM',
                             stripe_customer_id = :customerId,
                             stripe_subscription_id = :subscriptionId,
-                            updated_at_ms = :now
-                        where id = :accountId
+                            stripe_updated_at_ms = :eventCreatedAt,
+                            updated_at_ms = :eventCreatedAt
+                        where (id = :accountId
+                               or stripe_customer_id = :customerId
+                               or stripe_subscription_id = :subscriptionId)
+                          and (stripe_updated_at_ms is null
+                               or stripe_updated_at_ms <= :eventCreatedAt)
                         """)
                 .param("customerId", customerId)
                 .param("subscriptionId", subscriptionId)
-                .param("now", now.toEpochMilli())
+                .param("eventCreatedAt", eventCreatedAt.toEpochMilli())
                 .param("accountId", accountId)
                 .update();
     }
 
-    public void deactivateSubscription(String subscriptionId, Instant now) {
+    public void deactivateSubscription(String subscriptionId, Instant eventCreatedAt) {
         jdbc.sql("""
                         update accounts
                         set plan = 'FREE',
                             stripe_subscription_id = null,
-                            updated_at_ms = :now
+                            stripe_updated_at_ms = :eventCreatedAt,
+                            updated_at_ms = :eventCreatedAt
                         where stripe_subscription_id = :subscriptionId
+                          and (stripe_updated_at_ms is null
+                               or stripe_updated_at_ms <= :eventCreatedAt)
                         """)
-                .param("now", now.toEpochMilli())
+                .param("eventCreatedAt", eventCreatedAt.toEpochMilli())
                 .param("subscriptionId", subscriptionId)
                 .update();
     }

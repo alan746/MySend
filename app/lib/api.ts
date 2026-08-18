@@ -39,6 +39,7 @@ export type Account = {
   roomMinutes: number;
   clipboardCharacters: number;
   roomFileBytes: number;
+  billingProfileAvailable: boolean;
 };
 
 const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");

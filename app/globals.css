@@ -1580,6 +1580,23 @@ a {
   color: var(--ink);
 }
 
+.membership-manage {
+  display: block;
+  margin: 12px auto 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.membership-manage:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .membership-note,
 .current-plan {
   margin: 10px 0 0;
