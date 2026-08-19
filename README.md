@@ -1,101 +1,112 @@
 # MySend
 
-MySend is a temporary workspace for sharing text and files. Create a room,
-send its five-character code, and close it when the transfer is done. Guests
-can use the core flow without creating an account.
+**Send what you need. Keep nothing longer than necessary.**
 
-## Product rules
+MySend is a short-lived workspace for handing off text and files. Create a
+ShareRoom without signing in, send one memorable five-character code, and let
+the room close itself when the timer ends.
+
+<p align="center">
+  <img src="docs/images/home.png" alt="MySend home page with guest ShareRoom creation" width="100%">
+</p>
+
+## What it does
+
+- **Create in seconds.** Choose a public or password-protected room, its
+  lifetime, and the number of successful entries allowed.
+- **Join with one code.** Every room gets four digits and one letter. Codes are
+  case-insensitive, so `4821K` and `4821k` open the same room.
+- **Share text and files together.** The clipboard and file board sit side by
+  side, with no folder setup or permanent storage to manage.
+- **See every limit.** The room shows its remaining time, privacy, entry count,
+  plan, character use, and file storage at a glance.
+- **Stay anonymous when you want.** Guest creation and joining require no
+  account. Free registration adds My ShareRooms; Premium raises every limit.
+
+| ShareRoom workspace | Account and plans |
+| --- | --- |
+| ![Clipboard, file board, room code and countdown](docs/images/shareroom.png) | ![Sign in, registration and Premium plan settings](docs/images/settings.png) |
+
+## Current capabilities
+
+The current build covers the complete temporary-sharing flow:
+
+- public and private ShareRooms with optional passwords;
+- case-insensitive access codes in a readable `0000A` format;
+- access-count enforcement after a successful room entry;
+- shared clipboard updates with plan-specific character limits;
+- upload, download, listing, and deletion for common documents, source code,
+  images, archives, and other files;
+- owner controls for password, privacy, entry limit, close time, and immediate
+  room closure;
+- email registration with a ten-minute verification code, sign-in sessions,
+  and an active My ShareRooms list;
+- Stripe checkout, customer billing portal, and subscription webhooks;
+- automatic expiry cleanup, API rate limits, secure room cookies, and
+  production configuration checks.
+
+## Plans and limits
 
 | Capability | Guest | Free account | Premium |
 | --- | ---: | ---: | ---: |
-| Monthly price | No login | $0 | $9.99 |
+| Monthly price | No login | $0 | $9.99 CAD |
 | Active rooms | 1 | 2 | 5 |
-| Maximum room lifetime | 15 minutes | 60 minutes | 180 minutes |
+| Maximum lifetime | 15 minutes | 60 minutes | 3 hours |
 | Clipboard per room | 2,000 characters | 10,000 characters | 100,000 characters |
 | Total files per room | 250 MB | 1 GB | 5 GB |
 | Single file | 50 MB | 250 MB | 1 GB |
-| Successful guest entries | 20 | 100 | 1,000 |
+| Successful entries | 20 | 100 | 1,000 |
 
-Guests can create and join rooms without an account. Free accounts add the
-My ShareRooms list and higher limits. Premium raises the room, clipboard, file,
-and entry limits.
+## Technology
 
-## Stack
+| Layer | Technology | Role |
+| --- | --- | --- |
+| Web | React 19, TypeScript, Vinext, Vite, Tailwind CSS | Server-rendered routes, responsive interface, and typed API client |
+| API | Java 21, Spring Boot 3, Maven | Room, account, file, email, and billing services |
+| Data | PostgreSQL, H2, Flyway | Production persistence, lightweight local profile, and schema migrations |
+| Storage | Local or mounted file storage | Expiring room uploads with per-plan quotas |
+| Integrations | SMTP, Stripe | Email verification and Premium subscriptions |
+| Delivery | Docker Compose, GitHub Actions | Reproducible local services and pull-request checks |
 
-- React, TypeScript, Vinext, and Vite
-- Java 21, Maven, Spring Boot, and Flyway
-- PostgreSQL in production, H2 for local development
-- Docker Compose for the local API and database
+```mermaid
+flowchart LR
+    Browser["Browser"] --> Web["React + Vinext web"]
+    Web --> API["Spring Boot API"]
+    API --> DB["PostgreSQL"]
+    API --> Files["File storage"]
+    API --> Mail["SMTP"]
+    API --> Stripe["Stripe"]
+```
 
-## Local development
+## Run locally
 
-The web client requires Node.js 22 or newer:
+The web client requires Node.js 22 or newer. The API requires Java 21, or it
+can run with PostgreSQL through Docker Desktop.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-The API requires Java 21:
+In another terminal:
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-To run the API with PostgreSQL instead:
+For the containerized API and PostgreSQL instead:
 
 ```bash
 docker compose up --build
 ```
 
-## Deployment
+Open `http://localhost:3000`; the API health endpoint is
+`http://localhost:8080/actuator/health`.
 
-Deploy the web client and API independently. The web build needs both public
-origins:
+## Project documents
 
-```text
-NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
-```
-
-Build and run the API from `backend/Dockerfile`. Mount durable storage at the
-same absolute path supplied as `UPLOAD_DIRECTORY`, use PostgreSQL, and set:
-
-```text
-SPRING_PROFILES_ACTIVE=production
-DATABASE_URL=jdbc:postgresql://database-host:5432/mysend
-DATABASE_USERNAME=mysend
-DATABASE_PASSWORD=<secret>
-WEB_ORIGINS=https://your-domain.com
-APP_BASE_URL=https://your-domain.com
-COOKIE_SECURE=true
-UPLOAD_DIRECTORY=/app/uploads
-STORAGE_PERSISTENT=true
-MAIL_FROM=MySend <send@your-domain.com>
-MAIL_DELIVERY_ENABLED=true
-DEVELOPMENT_CODE_ENABLED=false
-SPRING_MAIL_HOST=<smtp-host>
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=<smtp-user>
-SPRING_MAIL_PASSWORD=<secret>
-STRIPE_SECRET_KEY=<secret>
-STRIPE_WEBHOOK_SECRET=<secret>
-STRIPE_PREMIUM_PRICE_ID=<price-id>
-```
-
-Configure Stripe to send subscription events to
-`https://api.your-domain.com/api/billing/webhook`. The production profile
-refuses to start when PostgreSQL, HTTPS cookies and origins, persistent file
-storage, verified email delivery, or Stripe settings are missing. After the API
-starts, use `/actuator/health` as the readiness endpoint.
-
-Pull requests run the same checks used locally:
-
-```bash
-npm ci
-npm run check
-cd backend
-mvn --batch-mode --no-transfer-progress verify
-docker build --tag mysend-api:local .
-```
+- [Development workflow](docs/development-workflow.md) — repository layout,
+  issue-to-release process, local checks, and production delivery.
+- [Roadmap](docs/roadmap.md) — launch work and the updates planned after the
+  first public release.
