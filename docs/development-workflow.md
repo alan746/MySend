@@ -14,6 +14,7 @@ infrastructure changes in this repository.
 | `public/` | Static web assets and social preview image |
 | `tests/` | Rendered web output checks |
 | `.github/workflows/` | Pull-request and branch checks |
+| `docs/design/` | Ordered product and system design baseline |
 | `docs/` | Product delivery notes and maintained project documentation |
 
 ## Change lifecycle
@@ -53,18 +54,30 @@ purpose.
 
 ### 3. Design the change
 
-Before implementation, identify:
+Use the [design process](design/README.md) before implementation. Start at the
+earliest stage affected by the change: principle, requirement, use case,
+domain, architecture, interaction, interface, or operations. A later technical
+choice cannot silently override an earlier product decision.
 
-- the user action and visible result;
-- API request, response, and failure states;
-- persistence or migration changes;
-- guest, Free, and Premium limit differences;
-- expiry, authentication, authorization, and rate-limit effects;
-- the smallest useful automated test set.
+Trace the proposed change through:
+
+- the principle and user story it serves;
+- the normal use-case flow and every alternate path;
+- domain invariants and Guest, Free, or Premium differences;
+- input/output boundaries and adapter responsibilities;
+- screen states, API request/response, and stable failure codes;
+- persistence, expiry, authentication, authorization, and abuse effects;
+- deployment, monitoring, retention, rollback, and automated tests.
+
+Update the affected design document in the same pull request. A design stage is
+complete when the next stage can proceed without inventing an unstated product
+rule.
 
 For UI work, verify both a wide desktop layout and a narrow mobile layout.
-For API work, keep controller, service, and repository responsibilities
-separate and validate all client-controlled input at the API boundary.
+For API work, preserve the inward dependency rule: controllers translate,
+use cases own orchestration, domain objects own invariants, and outer adapters
+implement persistence or provider ports. Validate all client-controlled input
+at its boundary.
 
 ### 4. Implement in reviewable commits
 
