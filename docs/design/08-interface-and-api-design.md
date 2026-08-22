@@ -1,6 +1,6 @@
-# 7. Interface and API design
+# 8. Interface and API design
 
-**Status: Current contract and UI baseline**
+**Status: Baseline — interaction and adapter contract approved before coding**
 
 ## Information architecture
 
@@ -12,12 +12,6 @@
 
 The home page must keep Create and Join above supporting explanation. Settings
 must not imply that registration is required for the core sharing path.
-
-Current visual references:
-
-| Home | ShareRoom | Settings |
-| --- | --- | --- |
-| ![MySend home](../images/home.png) | ![MySend ShareRoom](../images/shareroom.png) | ![MySend settings](../images/settings.png) |
 
 ## Visual principles
 

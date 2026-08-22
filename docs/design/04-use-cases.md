@@ -1,6 +1,6 @@
-# 3. Use cases
+# 4. Use cases
 
-**Status: Current business flows, expressed independently of UI details**
+**Status: Baseline — application flows approved before adapters**
 
 The use cases are the application policy. A page, controller, database, email
 provider, or payment provider is an adapter around these flows rather than the
@@ -171,23 +171,22 @@ Verification:
 1. Enforce five failed codes per ten-minute window.
 2. Find the newest usable verification and compare the derived code hash.
 3. Atomically consume it, create a Free account, and issue an account session.
+4. Prove the device identity from its cookie and claim any still-open Guest
+   rooms owned by that device into the new account.
 
 Login enforces five failures per fifteen minutes, compares the password hash,
-clears recorded failures on success, and issues a session. Logout revokes the
-session and expires its cookie.
+clears recorded failures on success, issues a session, and performs the same
+idempotent claim of still-open rooms owned by the proven device. Logout revokes
+the session and expires its cookie.
 
 ## UC-08 — Load My ShareRooms
 
 **Primary actor:** Free or Premium member
 **Preconditions:** A valid account session.
-**Flow:** Resolve `account:<id>` ownership and return its active rooms newest
+**Flow:** Resolve `account:<id>` ownership and return logically open rooms newest
 first. Guests receive `ACCOUNT_REQUIRED` because a device room list is not an
-account feature.
-
-**Open design decision:** A guest room is not currently claimed when its device
-registers or signs in. Before public launch, choose either an explicit
-“attach this room” flow or a separate scoped owner proof so authentication does
-not unexpectedly hide owner controls for an active guest room.
+account feature. A room claimed during registration/login appears without a
+second action, and claiming the same device twice changes nothing.
 
 ## UC-09 — Manage Premium
 
@@ -230,6 +229,6 @@ The scheduled cleanup then:
 6. leaves the record intact and logs a warning when file deletion fails so a
    later run can retry.
 
-The current cleanup interval is fifteen minutes and the current room retention
-cutoff is seven days. The capacity effect of that retention is reviewed in the
-operations design.
+The cleanup worker runs at most fifteen minutes apart. Room content and its
+access-code reservation must be removed within 24 hours of logical closure;
+the capacity effect is reviewed in the operations design.

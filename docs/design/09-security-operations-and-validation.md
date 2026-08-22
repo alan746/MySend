@@ -1,6 +1,6 @@
-# 8. Security, operations, and validation
+# 9. Security, operations, and validation
 
-**Status: Current controls plus public-launch gates**
+**Status: Baseline — security and operating design approved before deployment**
 
 ## Trust boundaries
 
@@ -20,7 +20,7 @@ timestamps are untrusted until validated at their boundary.
 
 ## Threat and control map
 
-| Threat | Current control | Required public-launch follow-up |
+| Threat | Designed control | Required public-launch verification |
 | --- | --- | --- |
 | Guessing access codes | 240,000-code space, optional password, entry limit, identical unavailable response | Add IP/device entry throttling and monitor failed entry volume. |
 | Password guessing | Adaptive password hash; failed private entry does not consume a slot | Add room/password attempt throttling without revealing room existence. |
@@ -59,15 +59,13 @@ the confidentiality control when code guessing is an unacceptable risk.
 | Account session | Thirty days or logout | Scheduled deletion after expiry; immediate row deletion on logout |
 | Verification code | Ten minutes or successful consumption | Scheduled deletion after expiry |
 | Authentication attempt | Sliding rate-limit window | Older than one day |
-| Room content | Manual close, expiry, or entry exhaustion | Current implementation: eligible seven days after close/expiry |
+| Room content | Manual close, expiry, or entry exhaustion | Clipboard, filenames, files, and code reservation removed within 24 hours |
 | Stored file | Same logical room closure | Deleted before its room record is purged |
 | Stripe event claim | Not user content | Retained for idempotency/audit until a separate policy is approved |
 
-**Target launch decision:** Seven days is conservative for cleanup retry but
-keeps content and access codes occupied longer than the product promise needs.
-Before public launch, define a shorter content-purge objective and, if an audit
-tombstone is necessary, retain it without clipboard text, filenames, files, or
-the reusable access code.
+The 24-hour purge objective includes cleanup retries. If an operational audit
+tombstone is required beyond it, the tombstone contains no clipboard text,
+filename, file object, authorization token, or reusable access code.
 
 ## Deployment topology
 

@@ -34,7 +34,7 @@ The primary handoff is one five-character access code: four digits followed by
 one readable letter. Input is case-insensitive. Links and QR codes may be added
 later, but the code remains sufficient by itself.
 
-The current alphabet omits `I` and `O`, leaving 24 letters and 240,000 possible
+The chosen alphabet omits `I` and `O`, leaving 24 letters and 240,000 possible
 codes. Availability is protected through a database uniqueness constraint and
 bounded collision retries; capacity must be monitored before adding longer
 room retention.
@@ -94,8 +94,8 @@ secret management.
 | Single file | 50 MiB | 250 MiB | 1 GiB |
 | Successful entries | 20 | 100 | 1,000 |
 
-All plans have a five-minute minimum room lifetime. Premium is currently
-priced at CA$9.99 per month.
+All plans have a five-minute minimum room lifetime. The Premium launch price is
+CA$9.99 per month.
 
 ## Non-goals
 

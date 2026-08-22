@@ -1,6 +1,6 @@
-# 4. Domain model
+# 5. Domain model
 
-**Status: Current model with explicit target invariants**
+**Status: Baseline — conceptual model approved before persistence design**
 
 ## Ubiquitous language
 
@@ -159,16 +159,15 @@ The generator uses 10,000 numeric prefixes and 24 readable letters, for a
 theoretical pool of 240,000 codes. A code remains unavailable until its room
 record is physically deleted, not merely until the room closes.
 
-With the current seven-day record retention, occupancy is approximately the
-number of rooms created during the preceding week. The operating target is to
-keep retained occupancy below 50% of the pool and alert well before that point.
-At 120,000 retained rooms, that corresponds to an average of roughly 17,000
-new rooms per day across seven days.
+With the 24-hour content-purge objective, occupancy is approximately the number
+of rooms created during the previous day plus rooms waiting on cleanup retry.
+Alert at 25% occupancy (60,000 retained codes) and stop unreviewed growth work
+at 50% (120,000 retained codes).
 
 Before traffic approaches that level, choose one of these target changes:
 
-1. shorten closed-room retention while deleting content immediately;
-2. separate operational audit records from the reusable access-code row; or
+1. shorten the purge objective below 24 hours;
+2. separate content-free operational tombstones from reusable access codes; or
 3. enlarge the code format while preserving spoken readability.
 
 ## Persistence ownership
@@ -178,20 +177,19 @@ Before traffic approaches that level, choose one of these target changes:
 | Account and plan | PostgreSQL | Until account deletion is designed and requested |
 | Account session | PostgreSQL, hashed token | Until revocation or expiry |
 | Verification | PostgreSQL, hashed code | Ten-minute usability; expired rows cleaned later |
-| Room metadata and clipboard | PostgreSQL | Logically unavailable at closure; current physical purge after seven days |
+| Room metadata and clipboard | PostgreSQL | Logically unavailable at closure; physical purge within 24 hours |
 | Room token | PostgreSQL, hashed token | No later than room expiry |
 | File metadata | PostgreSQL | Purged with its room |
 | File bytes | Mounted or object storage | Purged before the room record is removed |
 | Authentication attempt | PostgreSQL | One-day cleanup horizon |
 | Stripe event claim | PostgreSQL | Retained for webhook idempotency and audit |
 
-## Known domain decisions still open
+## Resolved domain decisions
 
-- How active Guest ownership transfers when that device signs in or registers.
-- Whether exhausted rooms should appear in My ShareRooms until physical expiry;
-  the intended design says no, while the current list query needs alignment.
-- Whether room content should be physically purged immediately while a minimal
-  non-content tombstone remains for operations.
-- Whether a Premium downgrade should affect already open Premium rooms. The
-  current plan snapshot allows those rooms to finish under their original
-  limits, bounded by a maximum of three hours.
+- Successful registration or login atomically claims still-open Guest rooms
+  when the same request proves their device owner identity.
+- My ShareRooms excludes manual closure, expiry, and entry exhaustion.
+- Room content and reusable code reservation are purged within 24 hours. Any
+  longer operational audit uses a content-free record without that code.
+- A Premium downgrade does not change an already open room. The plan snapshot
+  lets it finish under original limits, bounded by three hours.
