@@ -59,6 +59,11 @@ earliest stage affected by the change: principle, requirement, use case,
 domain, architecture, interaction, interface, or operations. A later technical
 choice cannot silently override an earlier product decision.
 
+For a new feature, interaction wireflows and failure states are approved before
+controllers, database tables, or framework types are designed. Design documents
+state the intended system; implementation alignment is tracked separately in
+the issue and pull request.
+
 Trace the proposed change through:
 
 - the principle and user story it serves;
