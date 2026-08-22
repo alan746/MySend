@@ -106,6 +106,9 @@ Open `http://localhost:3000`; the API health endpoint is
 
 ## Project documents
 
+- [Design process](docs/design/README.md) — principles, requirements, use
+  cases, domain model, Clean Architecture, sequences, interfaces, security,
+  and operations in their required design order.
 - [Development workflow](docs/development-workflow.md) — repository layout,
   issue-to-release process, local checks, and production delivery.
 - [Roadmap](docs/roadmap.md) — launch work and the updates planned after the
