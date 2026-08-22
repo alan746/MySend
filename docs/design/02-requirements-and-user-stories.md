@@ -1,6 +1,6 @@
 # 2. Requirements and user stories
 
-**Status: Baseline with current implementation coverage**
+**Status: Baseline — approved before implementation**
 
 ## Actors
 
@@ -77,15 +77,15 @@
 | FR-12 | File deletion | Only the room owner deletes a file and releases its accounted bytes. |
 | FR-13 | Unique account email | Normalized email can belong to only one account. |
 | FR-14 | Verification request | Registration stores a password hash and sends a six-digit, ten-minute code. |
-| FR-15 | Verification completion | A valid unused code creates a Free account and account session. |
-| FR-16 | Login/logout | Valid credentials create a session; logout revokes it and clears the cookie. |
+| FR-15 | Verification completion | A valid unused code creates a Free account/session and claims open rooms proven by the same device identity. |
+| FR-16 | Login/logout | Valid credentials create a session and claim that device's open Guest rooms; logout revokes the session and clears the cookie. |
 | FR-17 | Authentication throttling | Verification sends, wrong codes, and failed logins are rate-limited. |
-| FR-18 | My ShareRooms | Only an authenticated member can list active rooms owned by that account. |
+| FR-18 | My ShareRooms | Only an authenticated member can list logically open rooms owned or claimed by that account. |
 | FR-19 | Premium checkout | An authenticated Free member receives a Stripe-hosted subscription checkout URL. |
 | FR-20 | Billing portal | A member with a Stripe customer can open Stripe-hosted billing management. |
 | FR-21 | Subscription synchronization | Valid, idempotent Stripe events promote or demote the account plan. |
 | FR-22 | Logical expiry | Manual close, elapsed expiry, or used entries makes room operations fail immediately. |
-| FR-23 | Physical cleanup | Expired transient records are purged; closed room files and records become purge-eligible after retention. |
+| FR-23 | Physical cleanup | Expired transient records are purged; room content and code reservation are removed within 24 hours of logical closure. |
 
 ## Quality requirements
 
