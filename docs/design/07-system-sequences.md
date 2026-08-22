@@ -1,6 +1,6 @@
-# 6. Interaction design
+# 7. System sequences
 
-**Status: Current primary sequences and required failure ordering**
+**Status: Baseline — runtime collaboration designed before adapters**
 
 These diagrams connect the use cases to their adapters. They describe ordering
 and trust boundaries; method names may evolve without changing the sequence.
@@ -172,6 +172,7 @@ sequenceDiagram
     UC->>DB: Create unique Free account
     UC->>Session: Issue session
     Session-->>AC: Plain token once
+    UC->>DB: Claim open rooms owned by device proof
     AC-->>Web: Account + HTTP-only session cookie
 ```
 
@@ -230,7 +231,7 @@ sequenceDiagram
     API-->>API: Reject immediately as ROOM_CLOSED
     Clock->>Job: Scheduled cleanup tick
     Job->>DB: Delete expired tokens and transient auth data
-    Job->>DB: Find rooms beyond retention cutoff
+    Job->>DB: Find rooms approaching 24-hour purge deadline
     loop Each purge-eligible room
         DB-->>Job: Room and file metadata
         Job->>Store: Delete each stored object
