@@ -51,6 +51,7 @@ mysend:
   mail-delivery-enabled: ${MAIL_DELIVERY_ENABLED:false}
   development-code-enabled: ${DEVELOPMENT_CODE_ENABLED:false}
   storage-persistent: ${STORAGE_PERSISTENT:false}
+  billing-enabled: ${BILLING_ENABLED:false}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

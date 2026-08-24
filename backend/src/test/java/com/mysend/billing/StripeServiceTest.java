@@ -113,6 +113,26 @@ class StripeServiceTest {
     }
 
     @Test
+    void reportsMaintenanceWithoutCallingStripeWhenBillingIsDisabled() {
+        StripeService disabledStripe = new StripeService(
+                properties(false),
+                accounts,
+                events,
+                new ObjectMapper(),
+                RestClient.builder(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        assertThatExceptionOfType(ApiException.class)
+                .isThrownBy(() -> disabledStripe.createCheckout(account(null)))
+                .satisfies(exception -> {
+                    assertThat(exception.status().value()).isEqualTo(503);
+                    assertThat(exception.code()).isEqualTo("BILLING_UPDATING");
+                    assertThat(exception.getMessage()).isEqualTo("Premium is being updated");
+                });
+    }
+
+    @Test
     void rejectsInvalidWebhookSignature() {
         String payload = eventPayload("evt_invalid", "active");
 
@@ -235,6 +255,10 @@ class StripeServiceTest {
     }
 
     private AppProperties properties() {
+        return properties(true);
+    }
+
+    private AppProperties properties(boolean billingEnabled) {
         return new AppProperties(
                 List.of("https://mysend.app"),
                 "https://mysend.app",
@@ -244,6 +268,7 @@ class StripeServiceTest {
                 true,
                 false,
                 true,
+                billingEnabled,
                 new AppProperties.Stripe(
                         "sk_test_value",
                         WEBHOOK_SECRET,

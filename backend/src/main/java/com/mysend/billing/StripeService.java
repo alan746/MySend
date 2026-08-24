@@ -69,6 +69,7 @@ public class StripeService {
     }
 
     public String createCheckout(Account account) {
+        requireEnabled();
         var stripe = properties.stripe();
         if (blank(stripe.secretKey()) || blank(stripe.premiumPriceId())) {
             throw new ApiException(
@@ -101,6 +102,7 @@ public class StripeService {
     }
 
     public String createPortal(Account account) {
+        requireEnabled();
         var stripe = properties.stripe();
         if (blank(stripe.secretKey())) {
             throw billingNotConfigured();
@@ -126,6 +128,7 @@ public class StripeService {
 
     @Transactional
     public void handleWebhook(String payload, String signatureHeader) {
+        requireEnabled();
         verifyWebhook(payload, signatureHeader);
         try {
             JsonNode event = objectMapper.readTree(payload);
@@ -253,6 +256,16 @@ public class StripeService {
 
     private static boolean blank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void requireEnabled() {
+        if (!properties.billingEnabled()) {
+            throw new ApiException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "BILLING_UPDATING",
+                    "Premium is being updated"
+            );
+        }
     }
 
     private static ApiException invalidSignature() {

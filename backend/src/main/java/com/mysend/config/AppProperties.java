@@ -15,6 +15,7 @@ public record AppProperties(
         boolean mailDeliveryEnabled,
         boolean developmentCodeEnabled,
         boolean storagePersistent,
+        boolean billingEnabled,
         Stripe stripe
 ) {
     public record Stripe(
