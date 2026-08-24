@@ -10,9 +10,8 @@ as the reason for a product or architecture decision.
 
 ```mermaid
 flowchart LR
-    A["0. Design brief"] --> B["1. Principles"]
-    B --> C["2. Requirements"]
-    C --> D["3. User interaction"]
+    A["0. Design brief and principles"] --> B["1. Requirements"]
+    B --> D["3. User interaction"]
     D --> E["4. Use cases"]
     E --> F["5. Domain model"]
     F --> G["6. System architecture"]
@@ -27,9 +26,8 @@ flowchart LR
 
 | Stage | Decision made before coding | Exit gate |
 | --- | --- | --- |
-| [0. Design brief](00-design-brief.md) | Product scope, chosen experience, system shape, major trade-offs | Stakeholders agree on what is being built and why. |
-| [1. Design principles](01-design-principles.md) | Rules that later design must preserve | A proposed feature can be accepted or rejected consistently. |
-| [2. Requirements and user stories](02-requirements-and-user-stories.md) | Actors, outcomes, functional and quality requirements | Every requirement is testable and traceable. |
+| [0. Design brief and principles](00-design-brief.md) | Product problem, scope, governing principles, assumptions, and non-goals | Stakeholders agree on what is being built and why. |
+| [1. Requirements baseline](01-requirements.md) | Stable FR, QR, and INV statements with objective acceptance checks | Every requirement is testable and allocated to later design. |
 | [3. User interaction design](03-user-interaction-design.md) | Navigation, wireflows, screen composition, states, and feedback | A user can complete every primary journey on paper. |
 | [4. Use cases](04-use-cases.md) | Framework-independent normal and alternate application flows | Business behaviour is unambiguous without choosing controllers or tables. |
 | [5. Domain model](05-domain-model.md) | Entities, values, relationships, lifecycle, and invariants | Each business rule has one authoritative representation. |
@@ -53,11 +51,12 @@ alignment belongs in issues, pull requests, and test results.
 
 | Product area | Requirements | Interaction | Use cases | Architecture owner |
 | --- | --- | --- | --- | --- |
-| Create and enter rooms | FR-01–FR-08 | Home create/join flows | UC-01–UC-03, UC-06 | Room application component |
-| Clipboard and files | FR-09–FR-12 | ShareRoom workspace | UC-04–UC-05 | Room and file components |
-| Accounts and room continuity | FR-13–FR-18 | Settings and My ShareRooms | UC-07–UC-08 | Account component |
-| Premium | FR-19–FR-21 | Upgrade/manage billing | UC-09 | Billing component |
-| Expiry and cleanup | FR-22–FR-23 | Closed-room state | UC-10 | Lifecycle component |
+| Create and enter rooms | FR-01-FR-10 | Home create/join flows | UC-01-UC-03 | Room application component |
+| Clipboard, files, and owner policy | FR-11-FR-17 | ShareRoom workspace | UC-04-UC-06 | Room and file components |
+| Accounts and room continuity | FR-18-FR-23 | Settings and My ShareRooms | UC-07-UC-08 | Account component |
+| Premium | FR-24-FR-26 | Upgrade/manage billing | UC-09 | Billing component |
+| Expiry and cleanup | FR-27-FR-28 | Closed-room state | UC-10 | Lifecycle component |
+| Feedback and quality | FR-29-FR-30, QR-01-QR-13 | All three destinations | Cross-cutting | Interface and operations design |
 
 ## Change rule
 

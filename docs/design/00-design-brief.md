@@ -1,138 +1,218 @@
-# 0. Design brief
+# 0. Design brief and principles
 
-**Status: Baseline — approved before implementation**
+**Status: Baseline - approved before requirements and solution design**
 
-## Purpose of this document
+## Purpose
 
-This brief fixes the initial product and system direction before detailed UI,
-API, or database work begins. Later documents expand these decisions; they do
-not redefine the product from the convenience of an implementation framework.
+This brief fixes the problem, product outcome, scope, and governing principles.
+It deliberately stops before choosing controllers, tables, frameworks, or
+provider adapters. Those choices are derived only after the requirements, use
+cases, and domain rules are understood.
+
+The design process is:
+
+```mermaid
+flowchart LR
+    Problem["Problem"] --> Requirements["Observable requirements"]
+    Requirements --> UseCases["Use-case behaviour"]
+    UseCases --> Domain["Domain rules"]
+    Domain --> Boundaries["Application boundaries"]
+    Boundaries --> Choices["Implementation choices"]
+    Choices --> Validation["Tests and operating evidence"]
+```
 
 ## Problem statement
 
-People regularly need to move a short piece of text or a few files between
-devices or people. Permanent drives add accounts and organization, chat retains
-history, and email requires recipients. The missing experience is a temporary,
-neutral handoff space that can be opened and joined in seconds.
+Moving a short piece of text or a few files between devices or people often
+takes more setup than the content deserves. Permanent drives introduce
+accounts, folders, and long-term organization. Chat retains history and
+requires a conversation. Email requires a recipient. MySend serves the
+temporary handoff between those products.
 
-## Product outcome
+## Product promise
 
-A person creates a short-lived ShareRoom, sends one memorable access code, and
-both sides use the same clipboard and file board until time, entry count, or
-the owner closes the room.
+> Send what you need through one short-lived ShareRoom, without requiring an
+> account, and make its access and disappearance easy to understand.
 
-Success means:
+A person creates a ShareRoom, shares one memorable code, and both sides use
+the same clipboard and file board until the owner closes the room, its time
+runs out, or its successful-entry allowance is exhausted.
 
-- a first-time visitor can create or join without registering;
+## Product outcomes
+
+MySend succeeds when:
+
+- a first-time visitor creates or joins a room without registration;
 - the access code can be read aloud and typed on another device;
-- room lifetime, privacy, entries, and capacity are visible;
-- closed content becomes inaccessible immediately and is physically removed
-  within the retention objective;
-- registration and payment add continuity or capacity without changing the
-  core sharing model.
+- public/private access and any room password behave predictably;
+- owners and participants see the same room status and capacity;
+- closed content becomes unavailable immediately and is later removed;
+- registration adds cross-device continuity and Free capacity;
+- Premium adds capacity through hosted billing without changing the sharing
+  protocol.
 
 ## Actors and primary journeys
 
 | Actor | Primary journey |
 | --- | --- |
-| Guest owner | Open site → create public/private room → share code → use workspace → close or allow expiry |
-| Visitor | Open site → enter code → provide password if requested → use workspace → leave |
-| Returning member | Sign in → view active rooms → create with Free/Premium limits → manage room |
-| New member | Enter email/password → verify six-digit code → continue as Free member |
-| Premium member | Open Settings → Stripe checkout/portal → return with plan synchronized by webhook |
-| Operator | Deploy, monitor capacity and purge lag, respond to storage/mail/billing failures |
+| Guest owner | Open MySend -> configure public/private room -> create -> share code -> use workspace -> close or allow expiry |
+| Visitor | Open MySend -> submit code -> submit password only when required -> use clipboard/files -> leave |
+| New member | Open Settings -> submit email/password -> enter ten-minute code -> continue as a signed-in Free member |
+| Returning member | Sign in with email/password -> view My ShareRooms -> create or manage active rooms |
+| Premium member | Compare limits -> use hosted checkout or billing management -> continue after plan synchronization |
+| Operator | Deploy safely -> watch capacity and purge deadlines -> recover storage, mail, billing, or database failure |
 
-## Experience decision
+## Experience boundary
 
-MySend uses three primary pages rather than a dashboard hierarchy:
+MySend has three primary destinations:
 
-1. **Home** — product promise plus Create/Join task switcher.
-2. **ShareRoom** — code/status, clipboard, file board, and owner controls.
-3. **Settings** — authentication, My ShareRooms, plan comparison, and billing.
+1. **Home** - product promise plus Create and Join tasks.
+2. **ShareRoom** - room code/status, clipboard, file board, and owner controls.
+3. **Settings** - registration/login, My ShareRooms, plan comparison, and
+   billing actions.
 
-Create and Join remain accessible without an account. Settings is a supporting
-route, not a gate placed in front of the product.
+Create and Join are complete without an account. Settings supports continuity
+and membership; it is never a gate in front of the core product.
 
-## System context
+## Governing principles
 
-```mermaid
-flowchart LR
-    Owner["Room owner"] --> Web["MySend web application"]
-    Visitor["Room visitor"] --> Web
-    Web --> API["MySend Java API"]
-    API --> DB[("PostgreSQL")]
-    API --> Files[("Temporary file storage")]
-    API --> Mail["SMTP provider"]
-    API --> Stripe["Stripe hosted billing"]
-    Operator["Operator"] --> Hosting["Deployment and monitoring"]
-    Hosting --> Web
-    Hosting --> API
-```
+### P1. No-login sharing is a complete path
 
-## Architecture decisions
+A guest can create, enter, use, and close a ShareRoom. Registration may add
+continuity and capacity but cannot unlock the basic act of sharing.
 
-| Decision | Choice | Reason | Rejected alternative |
-| --- | --- | --- | --- |
-| Delivery shape | Responsive web application | Opens from any device without installation | Native apps would add distribution friction before product validation. |
-| Web | React + TypeScript with server-rendered routes | Strong component model, typed contracts, fast first page | A Java-rendered UI would couple page iteration to backend delivery. |
-| API | Java 21, Spring Boot, Maven | Clear validation/security ecosystem and requested Java/Maven backend | Python is faster for a prototype but less aligned with the intended long-term backend. |
-| Service topology | Modular monolith | One deployable API keeps transactions and operations simple at launch | Microservices introduce network failure and deployment overhead without independent scale needs. |
-| Architecture style | Clean Architecture dependency rule | Keeps room/account policy independent of Spring, Stripe, SMTP, and storage | Controller-service-repository without ports would let framework decisions own business policy. |
-| Database | PostgreSQL + Flyway | Atomic entry consumption, unique codes/emails, version checks, durable migrations | In-memory-only state cannot survive deployment or coordinate instances. |
-| File storage | Storage port; mounted adapter for preview, object-storage adapter for production | Room lifecycle can control storage without coupling policy to a filesystem | Storing large files in PostgreSQL complicates backup and streaming. |
-| Browser identity | HTTP-only device, account, and room-scoped cookies | Supports no-login ownership while keeping opaque tokens out of JavaScript | Local-storage bearer tokens increase exposure to injected scripts. |
-| Access code | Four digits + readable letter, case-insensitive | Short enough to say and type; 240,000 combinations with `I`/`O` omitted | Long random links are less useful for device-to-device transfer. |
-| Registration | Email/password plus ten-minute code | Proves email ownership once without making every room require login | Social login adds providers and privacy decisions before it is needed. |
-| Billing | Stripe-hosted checkout and portal | MySend never processes card data; subscription state arrives by signed webhook | Custom card forms greatly increase compliance and security scope. |
+### P2. Temporary is the default
 
-## Data and lifecycle decisions
+Every room receives an expiry when it is created. Manual closure, time expiry,
+or exhausted successful entries makes the room unusable immediately. Content,
+credentials, and code reservation follow the room lifecycle.
 
-- A room stores a plan snapshot when created. A later upgrade/downgrade affects
-  new rooms; an open room finishes under its original limit for at most three
-  hours.
-- Manual close, expiry, or entry exhaustion denies access immediately.
-- Clipboard text, filenames, file objects, and reusable access-code reservation
-  are removed within 24 hours after logical closure.
-- Expired tokens and verification/session data are removed independently of
-  room content.
-- Successful registration or login on a device claims its still-open Guest
-  rooms into that account. The claim requires both the device owner proof and
-  the authenticated account session.
-- My ShareRooms lists only logically open account-owned rooms.
-- Visitors remain anonymous to the room owner; the system stores authorization
-  tokens, not visitor profiles.
+### P3. One memorable locator
 
-## Capacity assumptions
+The primary handoff is one five-character code: four digits and one readable
+letter. Input is case-insensitive. Links or QR codes may be added later, but
+the code remains sufficient by itself.
 
-The initial access-code pool is 240,000. With a 24-hour purge objective, alert
-at 25% retained occupancy and block public growth work at 50% until the code
-strategy is reviewed. File and database capacity are protected by per-plan
-quotas plus deployment-level rate and storage alarms.
+### P4. Limits are visible before they become errors
 
-The service starts as one API instance for private preview. Public launch must
-support a managed PostgreSQL database, durable shared/object storage, HTTPS,
-health probes, backups, and observable cleanup before horizontal API scaling.
+Lifetime, entries, clipboard capacity, file capacity, privacy, and plan appear
+where the user makes the related decision. The authoritative policy is shared
+across every interface, and invalid choices fail without partial work.
 
-## Design risks resolved before coding
+### P5. Owners control policy; participants share content
 
-| Risk | Design response |
+Only an owner changes privacy, password, lifetime, entry limit, or closure and
+deletes room files. An entered visitor can use the clipboard and file board
+but cannot change room policy. The owner does not receive a visitor profile.
+
+### P6. One room has two workspace surfaces
+
+Clipboard and file board share one room identity, authorization, countdown,
+and quota context. They are two parts of one handoff rather than separate
+products.
+
+### P7. Payment buys capacity, not correctness
+
+Guest, Free, and Premium use the same authorization, consistency, and sharing
+rules. Higher plans increase capacity; they do not receive a safer or more
+reliable protocol.
+
+### P8. Friction matches risk
+
+Public rooms use the access code. Private rooms may add a password. Account
+registration proves email ownership once; ordinary login does not repeat the
+email-code step. Sensitive failures disclose no more information than the
+actor needs to recover.
+
+### P9. Concurrent changes fail explicitly
+
+One accepted entry consumes one allowance. Stale content or policy changes do
+not silently overwrite a newer change. The user receives a clear refresh or
+retry action.
+
+### P10. Operational simplicity does not imitate production safety
+
+The product may begin as one small deployable system, but a public release
+still requires durable data, secure transport, secret handling, abuse
+controls, observable cleanup, and tested recovery.
+
+## Fixed product policy
+
+The detailed and testable values live in [1. Requirements
+baseline](01-requirements.md). At inception:
+
+- Guest is complete but intentionally smallest: one active room and at most
+  fifteen minutes;
+- a verified account begins on Free and can see My ShareRooms;
+- Free supports two active rooms and at most one hour;
+- Premium costs CA$9.99 monthly, supports five active rooms, and at most three
+  hours;
+- every plan has explicit clipboard, single-file, total-file, and successful
+  entry limits;
+- registration codes expire after ten minutes;
+- closed room content has a 24-hour physical purge objective.
+
+These are product decisions. Later design chooses mechanisms that satisfy them.
+
+## Scope
+
+### In scope
+
+- guest, Free, and Premium room creation;
+- public and private code-based entry;
+- one shared clipboard and one shared file board;
+- owner policy management and immediate close;
+- registration, email verification, login/logout, and My ShareRooms;
+- hosted Premium checkout and billing management;
+- logical closure, physical cleanup, monitoring, and recovery.
+
+### Out of scope
+
+MySend is not initially:
+
+- a permanent cloud drive, backup system, or version history;
+- a real-time rich-text or source-code collaboration editor;
+- a public directory or search engine for rooms;
+- a social graph, messaging system, or visitor analytics product;
+- a native mobile or desktop application;
+- a card-data processor or custom payment form;
+- a guarantee that any uploaded file is harmless.
+
+## Initial assumptions to validate
+
+| Assumption | Evidence required before public launch |
 | --- | --- |
-| Code guessing | Optional private password, entry limits, attempt throttling, identical unavailable response |
-| Access-code exhaustion | Readable alphabet, occupancy monitoring, 24-hour purge objective, future format review gate |
-| Concurrent edits | Versioned optimistic updates with explicit conflict recovery |
-| Upload abuse | Extension/type policy, per-file/room quotas, malware quarantine before public launch |
-| Lost Guest ownership after login | Atomic device-to-account claim of open rooms |
-| Payment redirect spoofing | Only signed, idempotent Stripe webhooks change plan |
-| Cleanup/storage mismatch | Delete content through a storage port; retry/compensate before releasing metadata/code |
+| A five-character pool supports early traffic | Retained-code occupancy and creation collision measurements stay below the review threshold. |
+| Fifteen minutes is useful for Guest handoffs | Private-preview completion and abandonment feedback supports the value. |
+| Clipboard plus files covers the core handoff | Usability sessions complete representative text, code, image, and document transfers without another feature. |
+| Optional private password is understandable | Users correctly predict whether a chosen room needs only a code or a code and password. |
+| Twenty-four-hour purge is operationally achievable | Cleanup-lag evidence includes provider failures and retry, not only the normal path. |
+| Hosted billing is acceptable | Sandbox testing covers checkout, return, webhook delay, cancellation, and billing management. |
+
+An invalidated assumption starts a requirement change. It does not permit a
+downstream implementation to redefine the product silently.
+
+## Open product questions
+
+The following do not block the first private preview but must be decided before
+their affected public-launch work:
+
+- whether private rooms without passwords should remain supported after
+  usability testing;
+- the public-launch entry/password abuse thresholds;
+- the reference environment used for the performance requirement;
+- malware quarantine and archive-inspection policy;
+- account deletion and long-term billing-event retention policy;
+- the access-code format or reuse policy at the capacity review threshold.
 
 ## Approval gate
 
-Before implementation begins, reviewers must agree that:
+The brief is ready for requirements work when reviewers agree that:
 
-- the three-page interaction model completes all primary journeys;
-- Guest sharing is complete without authentication;
-- chosen limits and 24-hour purge objective are operationally affordable;
-- the modular-monolith boundaries can express UC-01 through UC-10;
-- external providers remain adapters rather than domain dependencies;
-- public-launch security and storage work is explicitly scoped rather than
-  hidden behind local defaults.
+- the no-login handoff is the primary product rather than an account teaser;
+- temporary room lifecycle is part of the product promise;
+- the three-destination experience completes every primary journey;
+- membership changes capacity and continuity, not the sharing protocol;
+- non-goals prevent permanent-storage and social-product scope creep;
+- disputed product behaviour is listed as an open question instead of hidden
+  inside technical design.
