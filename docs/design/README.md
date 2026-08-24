@@ -1,73 +1,99 @@
 # MySend pre-development design
 
-This directory contains the decisions that must exist before a MySend feature
-is implemented. It starts from the product problem and intended interaction,
-then derives use cases, domain concepts, system boundaries, interfaces,
-security, and operations.
-
-Implementation is evaluated against this baseline. Existing code is not used
-as the reason for a product or architecture decision.
+This directory is the design baseline that constrains implementation. It moves
+from the product problem into observable requirements, framework-independent
+behaviour, domain ownership, boundaries, adapter contracts, and validation.
+Existing code is never used as the reason a business rule exists.
 
 ```mermaid
 flowchart LR
-    A["0. Design brief and principles"] --> B["1. Requirements"]
-    B --> D["3. User interaction"]
-    D --> E["4. Use cases"]
-    E --> F["5. Domain model"]
-    F --> G["6. System architecture"]
-    G --> H["7. System sequences"]
-    H --> I["8. Interface contracts"]
-    I --> J["9. Security and operations"]
+    A["0. Brief and principles"] --> B["1. Requirements"]
+    B --> C["2. Use cases"]
+    C --> D["3. Domain model"]
+    D --> E["4. Architecture"]
+    E --> F["5. Interaction"]
+    F --> G["6. Sequences"]
+    G --> H["7. Interface and API"]
+    H --> I["8. Security, operations, validation"]
+    I --> J["9. ADRs"]
     J --> K["Issues and implementation"]
-    K --> L["Validation and release"]
+    K --> L["Release evidence"]
 ```
 
-## Required reading order
+## Required reading order and exit gates
 
 | Stage | Decision made before coding | Exit gate |
 | --- | --- | --- |
-| [0. Design brief and principles](00-design-brief.md) | Product problem, scope, governing principles, assumptions, and non-goals | Stakeholders agree on what is being built and why. |
-| [1. Requirements baseline](01-requirements.md) | Stable FR, QR, and INV statements with objective acceptance checks | Every requirement is testable and allocated to later design. |
-| [3. User interaction design](03-user-interaction-design.md) | Navigation, wireflows, screen composition, states, and feedback | A user can complete every primary journey on paper. |
-| [4. Use cases](04-use-cases.md) | Framework-independent normal and alternate application flows | Business behaviour is unambiguous without choosing controllers or tables. |
-| [5. Domain model](05-domain-model.md) | Entities, values, relationships, lifecycle, and invariants | Each business rule has one authoritative representation. |
-| [6. System architecture](06-system-architecture.md) | Containers, components, CA boundaries, ports, adapters, and technology choices | Dependency direction and component ownership are agreed. |
-| [7. System sequences](07-system-sequences.md) | Runtime collaboration and failure ordering | Important journeys cross each boundary in a defined order. |
-| [8. Interface and API design](08-interface-and-api-design.md) | UI contract, HTTP resources, cookies, errors, and file policy | Independent adapters can implement against one contract. |
-| [9. Security, operations, and validation](09-security-operations-and-validation.md) | Trust boundaries, retention, deployment, monitoring, recovery, and tests | The design is safe and practical to operate. |
+| [0. Design brief and principles](00-design-brief.md) | Product problem, promise, scope, principles, assumptions, and non-goals | Stakeholders agree on what is being built and what is deliberately excluded. |
+| [1. Requirements baseline](01-requirements.md) | Stable FR, QR, and INV statements with objective acceptance checks | Every requirement is testable, uniquely identified, and allocated forward. |
+| [2. Use cases](02-use-cases.md) | Actor goals, decision order, alternate flows, and success/failure guarantees | Behaviour is unambiguous without controllers, tables, or framework annotations. |
+| [3. Domain model](03-domain-model.md) | Entities, value objects, policies, lifecycle, and invariant ownership | INV-01-INV-12 each have one authoritative owner. |
+| [4. System architecture](04-system-architecture.md) | Components, inward dependencies, ports, transaction/compensation boundaries, scaling shape | Every use case has an application owner and can run through stable ports. |
+| [5. User interaction design](05-user-interaction-design.md) | Navigation, wireflows, capabilities, states, feedback, responsive/accessibility behaviour | Every primary journey succeeds and fails coherently on paper/prototype. |
+| [6. System sequences](06-system-sequences.md) | Adapter collaboration, trust boundaries, and failure ordering | Each UC crosses validation, policy, persistence, and response boundaries in a defined order. |
+| [7. Interface and API design](07-interface-and-api-design.md) | Routes, resources, credentials, payloads, errors, and file policy | Every endpoint maps to a UC/FR and exposes no protected implementation detail. |
+| [8. Security, operations, and validation](08-security-operations-and-validation.md) | Threat controls, authorization, retention, deployment, monitoring, recovery, and evidence | Every requirement family has positive, negative, boundary, and operating evidence. |
+| [9. Architecture decision records](09-architecture-decisions.md) | Consequential technology choices, alternatives, costs, and review triggers | Every major choice can be defended and deliberately superseded later. |
 
-## Design language
+## Identifier language
 
-- **Baseline** — an approved decision that implementation must follow.
-- **Open question** — a decision that blocks the affected implementation and
-  must receive an owner and deadline.
-- **Superseded** — a previous decision retained for history with a link to its
-  replacement.
+- `P` - governing product/design principle;
+- `FR` - observable functional requirement;
+- `QR` - measurable quality requirement;
+- `INV` - business invariant that every boundary must preserve;
+- `UC` - framework-independent use case;
+- `ADR` - architecture choice with context and consequences.
 
-Design documents do not use “current implementation” as a status. Code
-alignment belongs in issues, pull requests, and test results.
+Identifiers are never reused. A retired item is marked superseded and links to
+its replacement.
 
-## Traceability
+## End-to-end traceability
 
-| Product area | Requirements | Interaction | Use cases | Architecture owner |
-| --- | --- | --- | --- | --- |
-| Create and enter rooms | FR-01-FR-10 | Home create/join flows | UC-01-UC-03 | Room application component |
-| Clipboard, files, and owner policy | FR-11-FR-17 | ShareRoom workspace | UC-04-UC-06 | Room and file components |
-| Accounts and room continuity | FR-18-FR-23 | Settings and My ShareRooms | UC-07-UC-08 | Account component |
-| Premium | FR-24-FR-26 | Upgrade/manage billing | UC-09 | Billing component |
-| Expiry and cleanup | FR-27-FR-28 | Closed-room state | UC-10 | Lifecycle component |
-| Feedback and quality | FR-29-FR-30, QR-01-QR-13 | All three destinations | Cross-cutting | Interface and operations design |
+| Product area | Requirements | Use cases | Domain owner | Application owner | Primary interface | Verification |
+| --- | --- | --- | --- | --- | --- | --- |
+| Create and enter rooms | FR-01-FR-10, QR-01, INV-01-INV-05 | UC-01-UC-03 | `RoomCode`, `ShareRoom`, `RoomEntryPolicy`, `RoomAccessGrant` | Room application | Home + room API | Unit, concurrency, API, Guest/public/private journeys |
+| Clipboard and owner policy | FR-11-FR-14, QR-02, INV-04-INV-08 | UC-04, UC-06 | `ShareRoom`, `RoomVersion`, `PlanPolicy` | Room application | ShareRoom clipboard/controls | Version-race, authorization, browser conflict/close |
+| File board | FR-15-FR-17, QR-04, INV-05-INV-07, INV-11 | UC-05 | `RoomFile`, `FileUsage`, `UploadReservation` | File application | File API + board | Stream, quota, cross-room, compensation tests |
+| Accounts and room continuity | FR-18-FR-23, QR-07-QR-09, INV-09, INV-12 | UC-07-UC-08 | `Account`, `RegistrationChallenge`, `GuestRoomClaimPolicy` | Account application | Settings + auth/room-list API | Verification/login/rate-limit/claim journeys |
+| Premium | FR-24-FR-26, INV-08, INV-10 | UC-09 | `Account`, `SubscriptionTransitionPolicy` | Billing application | Settings + billing API | Sandbox, event-authentication, replay/order tests |
+| Expiry and cleanup | FR-27-FR-28, QR-10, INV-04-INV-05, INV-11 | UC-10 | `ShareRoom`, `RoomPurgePolicy`, `UploadReservation` | Lifecycle application | Closed room + cleanup operator | Controlled-clock, partial delete, retry/deadline exercise |
+| Presentation and delivery quality | FR-29-FR-30, QR-03, QR-05-QR-06, QR-11-QR-13 | Cross-cutting | Stable result/capability values | All applications/adapters | All destinations | Load, accessibility, responsive, dependency, config, observability checks |
 
-## Change rule
+## Decision discipline
 
-A later decision cannot silently override an earlier one. For example, a
-permanent file-history API conflicts with the temporary-by-default principle;
-the principle and requirements must be deliberately revised before API design
-or implementation begins.
+A downstream document cannot silently override an upstream decision. For
+example:
 
-Every implementation issue must link:
+- a permanent file-history endpoint conflicts with P2 and the scope exclusion;
+- a controller that consumes an entry before password verification violates
+  UC-02 and INV-02;
+- a table or framework annotation cannot justify a room lifetime;
+- a browser return from checkout cannot override FR-26/INV-10;
+- deleting room metadata before file objects violates INV-11 and ADR-009.
 
-1. the principle and requirement it serves;
-2. the interaction and use-case step it changes;
-3. the domain invariant and architecture boundary it uses;
-4. the interface, security, retention, and test obligations it introduces.
+When evidence invalidates an assumption, revise the brief and requirements
+first, then propagate the new identifiers/flows through domain, architecture,
+interfaces, ADRs, and verification.
+
+## Implementation issue checklist
+
+Every feature issue and pull request links:
+
+1. the `P`, `FR`, `QR`, and `INV` identifiers it serves;
+2. the normal and alternate `UC` steps it changes;
+3. the authoritative domain owner and application boundary;
+4. the affected interaction state and interface contract;
+5. security, retention, concurrency, and failure obligations;
+6. test and operating evidence added for the change;
+7. any ADR created or superseded.
+
+## Baseline status language
+
+- **Baseline** - approved decision that implementation must follow.
+- **Proposed** - decision awaiting review; affected implementation does not
+  begin.
+- **Open question** - named uncertainty with an owner/evidence gate.
+- **Superseded** - retained history with a link to its replacement.
+
+Design documents do not use “current implementation” as design status. Code
+alignment belongs in issues, pull requests, test output, and release evidence.
