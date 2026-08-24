@@ -200,7 +200,6 @@ their affected public-launch work:
 - whether private rooms without passwords should remain supported after
   usability testing;
 - the public-launch entry/password abuse thresholds;
-- the reference environment used for the performance requirement;
 - malware quarantine and archive-inspection policy;
 - account deletion and long-term billing-event retention policy;
 - the access-code format or reuse policy at the capacity review threshold.

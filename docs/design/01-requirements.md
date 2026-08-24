@@ -74,6 +74,17 @@ All plans use a five-minute minimum lifetime. Premium is CA$9.99 per month at
 launch. A later pricing or quota change requires a new requirement decision
 and does not mutate already-open rooms.
 
+Authentication abuse limits at launch:
+
+| Action | Allowance | Boundary result |
+| --- | --- | --- |
+| Registration-code delivery | One send per normalized email every 60 seconds and at most five sends in a rolling hour | An earlier sixth/cooldown request sends nothing and returns the next eligible time. |
+| Wrong registration code | At most five failed submissions per normalized email in ten minutes | A later attempt in the window performs no verification and returns the next eligible time. |
+| Failed login | At most five failed submissions per normalized email in fifteen minutes | A later attempt in the window performs no credential success and returns the next eligible time. |
+
+Public-launch IP/device abuse thresholds remain a separate security decision;
+they may be stricter but cannot weaken these account-flow limits.
+
 ## Functional requirements
 
 ### Room creation and ownership
@@ -120,7 +131,7 @@ Allowed launch extensions are `pdf`, `txt`, `md`, `java`, `py`, `c`, `h`,
 | FR-19 | Completing the first registration challenge shall create a signed-in Free account and claim still-open Guest rooms proven to belong to the same device. | A valid unused code creates exactly one Free account and session. Eligible open rooms appear under that account; closed, expired, exhausted, or foreign-device rooms do not. Repeating verification creates nothing additional. |
 | FR-20 | A returning member shall sign in with normalized email and password without another email verification code. | Correct credentials create one usable account session and idempotently claim eligible rooms from the proven device. Incorrect credentials reveal neither whether the email exists nor its password state. |
 | FR-21 | A signed-in member shall be able to sign out and revoke the current session. | After logout, the former session cannot call account-only actions. Guest create and join remain available. |
-| FR-22 | Registration-code sends, wrong verification codes, and failed logins shall be rate-limited with a visible retry time. | Requests within policy succeed; excess attempts return a retry interval and do not send mail, create an account, or create a session. A later request after the interval can proceed. |
+| FR-22 | Registration-code sends, wrong verification codes, and failed logins shall obey the fixed launch abuse limits and return a visible retry time. | A sixth send in one hour, a send inside 60 seconds, a sixth wrong code in ten minutes, or a sixth failed login in fifteen minutes is rejected without mail/account/session effects and reports the next eligible time. A request after the window can proceed. |
 | FR-23 | My ShareRooms shall be available only to a signed-in member and shall list that account's logically open rooms. | Free and Premium members see owned or claimed open rooms in newest-first order. Guests, unrelated accounts, and closed/expired/exhausted rooms are excluded. |
 
 ### Premium billing
@@ -153,10 +164,19 @@ Allowed launch extensions are `pdf`, `txt`, `md`, `java`, `py`, `c`, `h`,
 | QR-07 | Credential protection | Production traffic is encrypted; account, device, and room credentials are unavailable to page scripts and absent from response bodies, URLs, logs, and stored plaintext. |
 | QR-08 | Privacy | MySend creates no visitor profile for room entry and exposes no visitor identity to the owner; operational logs exclude clipboard and file contents. |
 | QR-09 | Availability and recovery | Database or provider failure never acknowledges an uncommitted room/account/plan change; retry does not duplicate a successful operation. |
-| QR-10 | Retention reliability | Cleanup runs often enough that every logically closed room meets FR-28, and an alert fires before any room reaches the 24-hour purge deadline. |
+| QR-10 | Retention reliability | Cleanup runs at least every 15 minutes; purge-lag warning fires at 20 hours and critical alert at 23 hours so every logically closed room can meet FR-28. |
 | QR-11 | Maintainability | All business rules and alternate flows can be tested with controlled time and fake boundaries without a browser, framework container, database, mail service, storage service, or billing service. |
 | QR-12 | Observability | Operators can measure API failures by problem code, retained room/code occupancy, stored bytes, cleanup lag/retries, authentication throttles, mail failures, and billing-event rejection/backlog without logging user content or credentials. |
 | QR-13 | Deployability | Web and API build independently, expose readiness checks, and production startup refuses missing or unsafe database, origin, cookie, storage, mail, and billing configuration. |
+
+### Reference performance conditions
+
+QR-03 is measured after a two-minute warm-up over a ten-minute steady workload
+against one API instance with 2 vCPU and 2 GiB memory, a PostgreSQL service in
+the same region, production-equivalent network encryption, and no provider
+fault injection. The report records dataset size, JVM settings, database tier,
+and measured error rate. Changing the reference environment requires retaining
+the previous result for comparison.
 
 ## Domain invariants
 
