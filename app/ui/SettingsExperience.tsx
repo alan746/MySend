@@ -14,6 +14,8 @@ type VerificationResult = {
   developmentCode?: string | null;
 };
 
+const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
+
 export function SettingsExperience() {
   const [account, setAccount] = useState<Account | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -294,7 +296,13 @@ export function SettingsExperience() {
             <span><i className="free-dot" /> Free</span>
             <span><i className="premium-dot" /> Premium</span>
           </div>
-          {account?.plan === "PREMIUM" ? (
+          {!billingEnabled ? (
+            <div className="premium-maintenance" role="status">
+              <span>Plan update</span>
+              <strong>Premium is being updated.</strong>
+              <p>Checkout and billing management will reopen soon.</p>
+            </div>
+          ) : account?.plan === "PREMIUM" ? (
             <>
               <div className="current-plan">Premium is active on this account.</div>
               <button
@@ -328,7 +336,9 @@ export function SettingsExperience() {
               )}
             </>
           )}
-          {!account && <p className="membership-note">Create or sign in to upgrade.</p>}
+          {billingEnabled && !account && (
+            <p className="membership-note">Create or sign in to upgrade.</p>
+          )}
         </article>
       </section>
 
