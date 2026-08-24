@@ -25,9 +25,12 @@ Every use case records:
 
 ## UC-01 - Create ShareRoom
 
-**Requirements:** FR-01-FR-04, FR-29-FR-30, QR-09, INV-01, INV-06, INV-08  
-**Primary actor:** Guest owner, Free member, or Premium member  
-**Preconditions:** None for a guest; account authentication is optional.  
+**Requirements:** FR-01-FR-04, FR-29-FR-30, QR-09, INV-01, INV-06, INV-08
+
+**Primary actor:** Guest owner, Free member, or Premium member
+
+**Preconditions:** None for a guest; account authentication is optional.
+
 **Trigger:** The actor submits visibility, optional private password, lifetime,
 and successful-entry limit.
 
@@ -65,15 +68,19 @@ Alternate flows:
 
 **Success guarantee:** Exactly one open room exists with one owner, one unique
 canonical code, and one immutable plan snapshot; owner access consumes no
-visitor entry.  
+visitor entry.
+
 **Minimum failure guarantee:** No partially created room or owner result is
 observable.
 
 ## UC-02 - Enter ShareRoom
 
-**Requirements:** FR-05-FR-09, FR-27, FR-30, QR-01, INV-01-INV-05  
-**Primary actor:** Visitor  
-**Preconditions:** The visitor knows a candidate access code.  
+**Requirements:** FR-05-FR-09, FR-27, FR-30, QR-01, INV-01-INV-05
+
+**Primary actor:** Visitor
+
+**Preconditions:** The visitor knows a candidate access code.
+
 **Trigger:** The visitor submits the code and optional room password.
 
 Normal flow:
@@ -105,16 +112,20 @@ Alternate flows:
   one consistent result -> neither is acknowledged as successful.
 
 **Success guarantee:** The count increases exactly once and the returned grant
-authorizes only that room for no longer than its remaining lifetime.  
+authorizes only that room for no longer than its remaining lifetime.
+
 **Minimum failure guarantee:** INV-02 holds: zero entries are consumed and no
 authorization is issued.
 
 ## UC-03 - Open authorized room
 
-**Requirements:** FR-09-FR-10, FR-27, FR-29-FR-30, INV-04-INV-05  
-**Primary actor:** Room owner or entered visitor  
+**Requirements:** FR-09-FR-10, FR-27, FR-29-FR-30, INV-04-INV-05
+
+**Primary actor:** Room owner or entered visitor
+
 **Preconditions:** The actor presents owner proof or a room authorization
-grant.  
+grant.
+
 **Trigger:** The actor requests the current room workspace.
 
 Normal flow:
@@ -135,16 +146,20 @@ Alternate flows:
 - **A5 - Revoked/expired grant:** Return `ROOM_ACCESS_REQUIRED`.
 
 **Success guarantee:** The result contains only data and capabilities for one
-open room.  
+open room.
+
 **Minimum failure guarantee:** No clipboard, filename, file usage, or owner
 information is disclosed.
 
 ## UC-04 - Update clipboard
 
-**Requirements:** FR-13-FR-14, FR-27, FR-30, QR-02, INV-04-INV-06  
-**Primary actor:** Authorized room participant  
+**Requirements:** FR-13-FR-14, FR-27, FR-30, QR-02, INV-04-INV-06
+
+**Primary actor:** Authorized room participant
+
 **Preconditions:** UC-03 authorization can succeed; the actor has the version
-last read.  
+last read.
+
 **Trigger:** The participant submits replacement text and expected version.
 
 Normal flow:
@@ -169,14 +184,18 @@ Alternate flows:
   the same expected version remains safe.
 
 **Success guarantee:** One accepted value replaces the previous clipboard and
-advances the version once.  
+advances the version once.
+
 **Minimum failure guarantee:** Existing clipboard content is not overwritten.
 
 ## UC-05 - Use file board
 
-**Requirements:** FR-15-FR-17, FR-27, FR-30, QR-04, INV-04-INV-07, INV-11  
-**Primary actor:** Authorized participant; room owner for deletion  
-**Preconditions:** The room is open and the actor is authorized.  
+**Requirements:** FR-15-FR-17, FR-27, FR-30, QR-04, INV-04-INV-07, INV-11
+
+**Primary actor:** Authorized participant; room owner for deletion
+
+**Preconditions:** The room is open and the actor is authorized.
+
 **Trigger:** The actor lists, uploads, downloads, or deletes a room file.
 
 List flow:
@@ -226,16 +245,20 @@ Alternate flows:
   the same compensation guarantees.
 
 **Success guarantee:** File metadata, stored bytes, and room usage describe one
-accepted operation.  
+accepted operation.
+
 **Minimum failure guarantee:** Quota cannot be permanently lost and an orphan
 remains discoverable for compensation.
 
 ## UC-06 - Manage or close room
 
-**Requirements:** FR-11-FR-12, FR-27, FR-29-FR-30, QR-02, INV-04, INV-06-INV-08  
-**Primary actor:** Room owner  
+**Requirements:** FR-11-FR-12, FR-27, FR-29-FR-30, QR-02, INV-04, INV-06-INV-08
+
+**Primary actor:** Room owner
+
 **Preconditions:** The owner proves control of an open room and supplies the
-version last read.  
+version last read.
+
 **Trigger:** The owner changes policy or requests immediate closure.
 
 Settings flow:
@@ -268,15 +291,19 @@ Alternate flows:
   never reopen the room.
 
 **Success guarantee:** Settings change atomically, or the room becomes
-terminally unavailable.  
+terminally unavailable.
+
 **Minimum failure guarantee:** Prior accepted policy remains intact.
 
 ## UC-07 - Register and authenticate
 
-**Requirements:** FR-18-FR-22, FR-30, QR-07-QR-09, INV-09, INV-12  
-**Primary actor:** New or returning member  
+**Requirements:** FR-18-FR-22, FR-30, QR-07-QR-09, INV-09, INV-12
+
+**Primary actor:** New or returning member
+
 **Preconditions:** Registration requires access to the supplied email;
-ordinary login requires an existing verified account.  
+ordinary login requires an existing verified account.
+
 **Trigger:** The actor requests registration, verifies a code, signs in, or
 signs out.
 
@@ -330,15 +357,19 @@ Alternate flows:
   available.
 
 **Success guarantee:** The actor has one revocable session for the intended
-account; newly verified accounts start on Free.  
+account; newly verified accounts start on Free.
+
 **Minimum failure guarantee:** No account/session is created from unproven
 email or invalid credentials, and no foreign room is claimed.
 
 ## UC-08 - Load My ShareRooms
 
-**Requirements:** FR-23, FR-29-FR-30, INV-04, INV-12  
-**Primary actor:** Free or Premium member  
-**Preconditions:** A valid account session.  
+**Requirements:** FR-23, FR-29-FR-30, INV-04, INV-12
+
+**Primary actor:** Free or Premium member
+
+**Preconditions:** A valid account session.
+
 **Trigger:** The member opens or refreshes My ShareRooms.
 
 Normal flow:
@@ -359,16 +390,20 @@ Alternate flows:
   return `ROOM_CLOSED`; never grant access from list membership alone.
 
 **Success guarantee:** The result contains only logically open rooms owned by
-the current account.  
+the current account.
+
 **Minimum failure guarantee:** No room from another owner is disclosed.
 
 ## UC-09 - Manage Premium
 
-**Requirements:** FR-24-FR-26, FR-30, QR-09, INV-08, INV-10  
+**Requirements:** FR-24-FR-26, FR-30, QR-09, INV-08, INV-10
+
 **Primary actor:** Authenticated member; billing service for subscription
-events  
+events
+
 **Preconditions:** Checkout/portal requires an account session; event handling
-requires an authentic provider event.  
+requires an authentic provider event.
+
 **Trigger:** The member starts checkout/portal, or the billing service reports
 a lifecycle event.
 
@@ -406,16 +441,20 @@ Alternate flows:
   overwrite newer subscription state.
 
 **Success guarantee:** Hosted billing is available to the intended account and
-only an authentic, current, once-claimed event changes plan.  
+only an authentic, current, once-claimed event changes plan.
+
 **Minimum failure guarantee:** Existing account plan and open-room snapshots
 remain unchanged.
 
 ## UC-10 - Expire and purge data
 
-**Requirements:** FR-27-FR-28, FR-30, QR-10, QR-12, INV-04-INV-05, INV-11  
-**Primary actor:** Clock and cleanup operator  
+**Requirements:** FR-27-FR-28, FR-30, QR-10, QR-12, INV-04-INV-05, INV-11
+
+**Primary actor:** Clock and cleanup operator
+
 **Preconditions:** Transient records or rooms have reached their cleanup
-condition.  
+condition.
+
 **Trigger:** Any protected room operation evaluates time, or a cleanup cycle
 starts.
 
@@ -450,7 +489,8 @@ Alternate flows:
   counts before 24 hours.
 
 **Success guarantee:** Closed content, credentials, metadata, and reusable code
-reservation are absent by the requirement deadline.  
+reservation are absent by the requirement deadline.
+
 **Minimum failure guarantee:** The room remains inaccessible and retained
 metadata is sufficient for safe retry.
 

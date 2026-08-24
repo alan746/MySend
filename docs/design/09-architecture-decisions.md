@@ -26,7 +26,8 @@ turn a technology into a business requirement.
 
 ## ADR-001 - Modular monolith with inward dependencies
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** Ten use cases share room/account state and require atomic entry,
 version, claim, billing-event, and cleanup decisions. One small team must build
 and operate the first release while keeping business policy isolated from
@@ -53,7 +54,8 @@ distributed transactions, deployment, and tracing cost.
 
 ## ADR-002 - Java 21, Spring Boot, and Maven for the API
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** The project explicitly prefers a Java/Maven backend and needs HTTP,
 validation, credential protection, scheduling, health, database migration,
 and provider adapters without writing infrastructure from scratch.
@@ -75,7 +77,8 @@ tuning, or the team formally changes its long-term backend language.
 
 ## ADR-003 - React and TypeScript responsive web client
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** MySend must open on a new device without installation, provide
 fast Create/Join interactions, maintain clipboard/file progress, and adapt from
 360-pixel mobile layouts to desktop.
@@ -96,7 +99,8 @@ device capability becomes central enough to justify another adapter.
 
 ## ADR-004 - Opaque server-side browser credentials
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** Guest owners need durable device proof, members need revocable
 sessions, and visitors need grants scoped to one short-lived room. Browser
 scripts do not need to inspect any credential.
@@ -120,7 +124,8 @@ options are evaluated.
 
 ## ADR-005 - PostgreSQL for transactional metadata
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** Retained room codes and normalized account emails must be unique;
 the final entry and same-version mutation need atomic decisions; billing events
 must be claimed once; state must survive process restarts.
@@ -144,7 +149,8 @@ weakening its consistency rules.
 
 ## ADR-006 - File bytes outside PostgreSQL behind a storage port
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** A Premium room may hold 5 GiB and one file may be 1 GiB. Transfers
 must stream, while metadata and byte accounting remain transactional and purge
 must delete physical objects.
@@ -170,7 +176,8 @@ purge contracts must remain.
 
 ## ADR-007 - Stripe-hosted subscription billing
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** Premium is a monthly subscription, but MySend should not collect
 card data or build payment-method, tax, invoice, and cancellation interfaces.
 
@@ -192,7 +199,8 @@ same hosted-boundary and event-authority rules.
 
 ## ADR-008 - Immutable plan snapshot per room
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** An owner may upgrade or downgrade while rooms remain open for at
 most three hours. Applying the account's current plan on every room operation
 could unexpectedly shrink or expand an existing room.
@@ -215,7 +223,8 @@ requirement and user-facing transition rule.
 
 ## ADR-009 - Immediate logical closure plus asynchronous purge
 
-**Status:** Accepted  
+**Status:** Accepted
+
 **Context:** A scheduler cannot be the mechanism that makes an expired room
 private. File-provider failure can also prevent safe physical deletion during
 the first cleanup attempt.
@@ -238,7 +247,8 @@ deletion ordering.
 
 ## ADR-010 - Five-character code retained until safe purge
 
-**Status:** Accepted with capacity review  
+**Status:** Accepted with capacity review
+
 **Context:** The spoken locator is intentionally short: 10,000 numeric prefixes
 times 24 readable letters equals 240,000 codes. Reusing a code while content or
 authorization remains can connect a stale browser to the wrong room.
