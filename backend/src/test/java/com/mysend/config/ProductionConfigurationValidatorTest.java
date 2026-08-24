@@ -24,7 +24,31 @@ class ProductionConfigurationValidatorTest {
                 true,
                 false,
                 true,
+                true,
                 new AppProperties.Stripe("sk_live_value", "whsec_value", "price_value")
+        );
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend");
+        ProductionConfigurationValidator validator =
+                new ProductionConfigurationValidator(properties, environment);
+
+        assertThatCode(() -> validator.run(new DefaultApplicationArguments()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void acceptsProductionConfigurationWithoutStripeWhileBillingIsDisabled() {
+        AppProperties properties = properties(
+                List.of("https://mysend.app"),
+                "https://mysend.app",
+                true,
+                Path.of("/app/uploads"),
+                "MySend <send@mysend.app>",
+                true,
+                false,
+                true,
+                false,
+                new AppProperties.Stripe("", "", "")
         );
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend");
@@ -46,6 +70,7 @@ class ProductionConfigurationValidatorTest {
                 false,
                 true,
                 false,
+                true,
                 new AppProperties.Stripe("", "", "")
         );
         MockEnvironment environment = new MockEnvironment()
@@ -81,6 +106,7 @@ class ProductionConfigurationValidatorTest {
             boolean mailDeliveryEnabled,
             boolean developmentCodeEnabled,
             boolean storagePersistent,
+            boolean billingEnabled,
             AppProperties.Stripe stripe
     ) {
         return new AppProperties(
@@ -92,6 +118,7 @@ class ProductionConfigurationValidatorTest {
                 mailDeliveryEnabled,
                 developmentCodeEnabled,
                 storagePersistent,
+                billingEnabled,
                 stripe
         );
     }

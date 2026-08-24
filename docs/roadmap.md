@@ -14,7 +14,7 @@ Available today:
 - owner controls, entry limits, and automatic expiry;
 - email registration and account sessions;
 - My ShareRooms for registered users;
-- Stripe subscription checkout and billing portal;
+- Premium plan comparison with billing held in an explicit updating state;
 - PostgreSQL migrations, container builds, cleanup jobs, and CI checks.
 
 ## Release 1 — public launch
@@ -24,7 +24,7 @@ Available today:
 | P0 | Production web and API hosting | HTTPS domains serve the web and API with reproducible deployments from `main`. |
 | P0 | Object storage | Uploads use durable S3-compatible storage and expire with their ShareRoom. |
 | P0 | Transactional email | Verification mail is delivered from a verified domain with bounce and failure visibility. |
-| P0 | Stripe live mode | Checkout, renewal, cancellation, portal access, and webhook retries are verified end to end. |
+| P0 | Stripe live mode | Enable `BILLING_ENABLED` only after checkout, renewal, cancellation, portal access, and webhook retries are verified end to end. |
 | P0 | Monitoring and backups | Health, error rate, storage use, cleanup failures, database backups, and restore steps are observable. |
 | P0 | Browser journey tests | Automated tests cover guest creation, private entry, clipboard updates, files, registration, and expiry. |
 | P0 | Abuse controls | IP-aware throttling, upload scanning, blocked extensions, and operational limits protect public capacity. |

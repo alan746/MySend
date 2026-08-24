@@ -1612,6 +1612,37 @@ a {
   color: var(--lime);
 }
 
+.premium-maintenance {
+  margin-top: 20px;
+  padding: 17px 18px;
+  border: 1px solid rgba(244, 240, 229, 0.24);
+  background: rgba(244, 240, 229, 0.06);
+}
+
+.premium-maintenance span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--lime);
+  font-family: "Courier New", monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.premium-maintenance strong {
+  display: block;
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.premium-maintenance p {
+  margin: 5px 0 0;
+  color: rgba(244, 240, 229, 0.55);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .active-rooms {
   width: min(1280px, calc(100% - 64px));
   margin: 0 auto;

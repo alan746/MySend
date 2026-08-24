@@ -72,7 +72,9 @@ public class ProductionConfigurationValidator implements ApplicationRunner {
                 || properties.mailFrom().contains("example.com")) {
             problems.add("MAIL_FROM must use a verified sender");
         }
-        validateStripe(problems);
+        if (properties.billingEnabled()) {
+            validateStripe(problems);
+        }
         return problems;
     }
 

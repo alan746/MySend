@@ -182,11 +182,14 @@ The web build needs these public origins:
 ```text
 NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_BILLING_ENABLED=false
 ```
 
 The API production profile uses PostgreSQL, secure cookies, persistent file
-storage, SMTP delivery, and Stripe. Start from `backend/.env.example` and store
-real values in the deployment platform's secret manager, never in Git.
+storage, and SMTP delivery. Premium billing is staged behind
+`BILLING_ENABLED=false`; Stripe values become mandatory only when that flag is
+enabled. Start from `backend/.env.example` and store real values in the
+deployment platform's secret manager, never in Git.
 
 Build the API with `backend/Dockerfile`, mount durable storage at the same path
 as `UPLOAD_DIRECTORY`, and send Stripe subscription events to:
@@ -196,4 +199,5 @@ https://api.your-domain.com/api/billing/webhook
 ```
 
 The production validator refuses to start when required database, origin,
-cookie, storage, email, or billing settings are missing.
+cookie, storage, or email settings are missing. It also requires all Stripe
+settings whenever `BILLING_ENABLED=true`.

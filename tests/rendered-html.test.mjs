@@ -46,6 +46,16 @@ test("server-renders a room-specific loading state", async () => {
   assert.match(html, /role="status"/);
 });
 
+test("shows Premium as updating without an active checkout action", async () => {
+  const response = await render("/settings");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /Premium is being updated/);
+  assert.doesNotMatch(html, /Upgrade to Premium/);
+  assert.doesNotMatch(html, /Manage billing/);
+});
+
 test("keeps API contracts and metadata product-specific", async () => {
   const [layout, api, packageJson] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),

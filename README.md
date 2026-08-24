@@ -41,7 +41,8 @@ The current build covers the complete temporary-sharing flow:
   room closure;
 - email registration with a ten-minute verification code, sign-in sessions,
   and an active My ShareRooms list;
-- Stripe checkout, customer billing portal, and subscription webhooks;
+- Premium plan comparison, with checkout temporarily marked as updating for
+  the first deployment;
 - automatic expiry cleanup, API rate limits, secure room cookies, and
   production configuration checks.
 
@@ -65,7 +66,7 @@ The current build covers the complete temporary-sharing flow:
 | API | Java 21, Spring Boot 3, Maven | Room, account, file, email, and billing services |
 | Data | PostgreSQL, H2, Flyway | Production persistence, lightweight local profile, and schema migrations |
 | Storage | Local or mounted file storage | Expiring room uploads with per-plan quotas |
-| Integrations | SMTP, Stripe | Email verification and Premium subscriptions |
+| Integrations | SMTP, Stripe-ready billing adapter | Email verification and staged Premium subscriptions |
 | Delivery | Docker Compose, GitHub Actions | Reproducible local services and pull-request checks |
 
 ```mermaid
