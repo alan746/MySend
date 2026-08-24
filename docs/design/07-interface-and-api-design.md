@@ -1,6 +1,17 @@
-# 8. Interface and API design
+# 7. Interface and API design
 
 **Status: Baseline — interaction and adapter contract approved before coding**
+
+## Design inputs
+
+This document adapts [2. Use cases](02-use-cases.md) to the browser experience
+in [5. User interaction design](05-user-interaction-design.md). It is allowed
+to choose routes, HTTP status codes, JSON, multipart, and cookie transport, but
+it cannot redefine plan limits, authorization, closure, or failure guarantees.
+
+Contract traceability is maintained as `endpoint -> UC -> FR/QR/INV`. Stable
+problem codes come from use-case outcomes; human messages may change without
+changing client behaviour.
 
 ## Information architecture
 
@@ -86,15 +97,15 @@ type.
 
 ### Room endpoints
 
-| Method and path | Purpose | Authorization | Success |
+| Method and path | Use case / requirements | Authorization | Success |
 | --- | --- | --- | --- |
-| `POST /api/rooms` | Create room | Device or account owner identity | `201 RoomView` |
-| `POST /api/rooms/enter` | Validate entry and issue room cookie | Code and optional password | `200 RoomView` + cookie |
-| `GET /api/rooms` | List owned active rooms | Account session | `200 RoomView[]` |
-| `GET /api/rooms/{code}` | Load room state | Owner or room token | `200 RoomView` |
-| `PATCH /api/rooms/{code}/clipboard` | Save clipboard at expected version | Owner or room token | `200 RoomView` |
-| `PATCH /api/rooms/{code}/settings` | Change room policy | Owner only | `200 RoomView` |
-| `DELETE /api/rooms/{code}` | Close immediately | Owner only | `204` |
+| `POST /api/rooms` | UC-01 / FR-01-FR-04 | Device or account owner identity | `201 RoomView` |
+| `POST /api/rooms/enter` | UC-02 / FR-05-FR-09 | Code and optional password | `200 RoomView` + room cookie |
+| `GET /api/rooms` | UC-08 / FR-23 | Account session | `200 RoomSummary[]` |
+| `GET /api/rooms/{code}` | UC-03 / FR-09-FR-10 | Owner or exact-room grant | `200 RoomView` |
+| `PATCH /api/rooms/{code}/clipboard` | UC-04 / FR-13-FR-14 | Owner or exact-room grant | `200 RoomView` |
+| `PATCH /api/rooms/{code}/settings` | UC-06 / FR-11 | Owner only | `200 RoomView` |
+| `DELETE /api/rooms/{code}` | UC-06 / FR-12, FR-27 | Owner only | `204` |
 
 Create input:
 
@@ -130,14 +141,18 @@ count, remaining entries, clipboard, file usage and limit, clipboard limit,
 creation and expiry, owner flag, and version. It never exposes owner keys,
 password hashes, or access-token hashes.
 
+`RoomSummary` is the account-owned list projection: access code, visibility,
+plan, entries, creation/expiry, file usage, and closure-relevant status. It
+does not include clipboard text or visitor grant data.
+
 ### File endpoints
 
-| Method and path | Purpose | Authorization | Success |
+| Method and path | Use case / requirements | Authorization | Success |
 | --- | --- | --- | --- |
-| `GET /api/rooms/{code}/files` | List file metadata | Owner or room token | `200 FileView[]` |
-| `POST /api/rooms/{code}/files` | Upload multipart field `file` | Owner or room token | `201 FileView` |
-| `GET /api/rooms/{code}/files/{fileId}` | Download as attachment | Owner or room token | Streamed bytes |
-| `DELETE /api/rooms/{code}/files/{fileId}` | Delete and release quota | Owner only | `204` |
+| `GET /api/rooms/{code}/files` | UC-05 / FR-15 | Owner or exact-room grant | `200 FileView[]` |
+| `POST /api/rooms/{code}/files` | UC-05 / FR-15, INV-11 | Owner or exact-room grant | `201 FileView` |
+| `GET /api/rooms/{code}/files/{fileId}` | UC-05 / FR-16 | Owner or exact-room grant | Streamed bytes |
+| `DELETE /api/rooms/{code}/files/{fileId}` | UC-05 / FR-17 | Owner only | `204` |
 
 Allowed extensions are `pdf`, `txt`, `md`, `java`, `py`, `c`, `h`, `cpp`,
 `hpp`, `doc`, `docx`, `jpg`, `jpeg`, `png`, `gif`, `webp`, `zip`, and `json`.
@@ -146,13 +161,13 @@ scanning in public production.
 
 ### Account endpoints
 
-| Method and path | Purpose | Success |
+| Method and path | Use case / requirements | Success |
 | --- | --- | --- |
-| `POST /api/auth/register/code` | Store pending credentials and send code | Verification expiry/delivery status |
-| `POST /api/auth/register/verify` | Consume six-digit code and create Free account | `200 AccountView` + session cookie |
-| `POST /api/auth/login` | Authenticate email/password | `200 AccountView` + session cookie |
-| `GET /api/auth/me` | Resolve current account | `200 AccountView` or `401` |
-| `POST /api/auth/logout` | Revoke and clear session | `204` |
+| `POST /api/auth/register/code` | UC-07 / FR-18, FR-22 | Verification expiry/delivery status |
+| `POST /api/auth/register/verify` | UC-07 / FR-19 | `200 AccountView` + session cookie |
+| `POST /api/auth/login` | UC-07 / FR-20, FR-22 | `200 AccountView` + session cookie |
+| `GET /api/auth/me` | UC-07 / FR-20-FR-21 | `200 AccountView` or `401` |
+| `POST /api/auth/logout` | UC-07 / FR-21 | `204` |
 
 `AccountView` contains identity, plan and relevant limits, plus whether a
 Stripe billing profile is available. It never includes password or session
@@ -160,11 +175,11 @@ material.
 
 ### Billing endpoints
 
-| Method and path | Purpose | Authorization |
+| Method and path | Use case / requirements | Authorization |
 | --- | --- | --- |
-| `POST /api/billing/checkout` | Create Stripe-hosted subscription checkout | Account session |
-| `POST /api/billing/portal` | Create Stripe-hosted billing portal | Account session and Stripe customer |
-| `POST /api/billing/webhook` | Synchronize signed subscription events | Stripe signature, no browser marker |
+| `POST /api/billing/checkout` | UC-09 / FR-24 | Account session |
+| `POST /api/billing/portal` | UC-09 / FR-25 | Account session and billing profile |
+| `POST /api/billing/webhook` | UC-09 / FR-26, INV-10 | Authenticated provider event; no browser marker |
 
 Checkout and portal return only a short-lived provider URL. The browser return
 URL is a presentation state; the webhook is authoritative for the account plan.
@@ -207,3 +222,38 @@ hashes. The device token itself is not stored in the room row.
 
 Clients branch on stable `code` values when behaviour differs. `message` is
 human-readable fallback text and may be refined without changing the contract.
+
+## Use-case outcome mapping
+
+| Use-case outcome | HTTP status | Stable problem code | Required client behaviour |
+| --- | ---: | --- | --- |
+| Invalid room policy/lifetime/entries | 400 | `INVALID_ROOM_POLICY`, `INVALID_LIFETIME`, `INVALID_ACCESS_LIMIT` | Keep values and focus the affected field. |
+| Owner active-room limit | 409 | `ACTIVE_ROOM_LIMIT` | Offer close-room, sign-in, or plan recovery. |
+| Private password missing/wrong | 401 | `ROOM_PASSWORD_INCORRECT` | Keep code, clear password, consume no entry. |
+| Room unknown to a direct lookup | 404 | `ROOM_NOT_FOUND` | Return to Join without showing content. |
+| Room logically closed | 410 | `ROOM_CLOSED` | Replace editable room state with terminal explanation. |
+| Participant grant absent/invalid | 401 | `ROOM_ACCESS_REQUIRED` | Return to Join for that code. |
+| Owner capability required | 403 | `ROOM_OWNER_REQUIRED` | Remove impossible retry and explain ownership. |
+| Version changed | 409 | `ROOM_CHANGED` | Preserve local input and offer Load latest. |
+| Clipboard or file capacity | 413 | `CLIPBOARD_LIMIT`, `SINGLE_FILE_LIMIT`, `ROOM_FILE_LIMIT` | Show applicable limit and preserve unaffected state. |
+| File extension disallowed | 415 | `FILE_TYPE_NOT_ALLOWED` | Show launch allowlist. |
+| Authentication throttled | 429 | `AUTH_RATE_LIMITED` | Display retry time and do not loop automatically. |
+| Mail, billing, storage, or code capacity unavailable | 502/503 | Provider/capacity-specific code | Preserve committed state and allow safe retry. |
+
+Malformed and unknown entry guesses may intentionally share a less specific
+unavailable response to avoid creating a room-discovery oracle. The adapter
+maps detailed internal outcomes to the least revealing public contract that
+still permits legitimate recovery.
+
+## Contract approval gate
+
+The interface contract is ready for implementation when:
+
+- every route maps to a use case and requirement identifiers;
+- code canonicalization, expected version, room scoping, and capability data
+  are represented without exposing protected values;
+- successful entry can atomically return a room result and set one room-scoped
+  credential;
+- file transfer streams and cross-room identifiers reveal no bytes;
+- browser payment return is never an entitlement signal;
+- each alternate use-case flow has a stable, non-sensitive outcome mapping.

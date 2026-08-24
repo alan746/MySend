@@ -1,19 +1,32 @@
-# 6. System architecture
+# 4. System architecture
 
 **Status: Baseline — selected before application implementation**
+
+## Design inputs
+
+The architecture implements the behaviour in [2. Use cases](02-use-cases.md)
+and protects the invariant owners in [3. Domain model](03-domain-model.md).
+Requirements describe why a boundary exists; technology is selected only
+after that boundary is named. Major choices and their trade-offs are recorded
+separately in [9. Architecture decision records](09-architecture-decisions.md).
 
 ## Architecture drivers
 
 The architecture must support:
 
-- complete Guest sharing without an account service round trip outside MySend;
-- atomic room entry limits and optimistic clipboard/settings updates;
-- short-lived authorization and physical content deletion;
-- streamed file transfer with plan quotas;
-- optional SMTP and Stripe integrations behind stable boundaries;
+- complete Guest sharing without an account gate (FR-01, FR-05);
+- atomic room entry and optimistic clipboard/settings changes (QR-01, QR-02,
+  INV-02-INV-03);
+- room-scoped authorization and immediate logical closure (FR-09, FR-27,
+  INV-04-INV-05);
+- streamed file transfer, quota reservation, and compensation (FR-15-FR-17,
+  QR-04, INV-11);
+- mail and hosted billing integrations behind stable boundaries (FR-18,
+  FR-24-FR-26);
+- physical purge with deadline evidence and retry (FR-28, QR-10);
 - one small-team deployment at launch without preventing later horizontal API
-  scaling;
-- fast isolated tests for business policy.
+  scaling (QR-13);
+- fast isolated tests for business policy (QR-11).
 
 These drivers favor a modular monolith with Clean Architecture boundaries over
 microservices or framework-centered controller logic.
@@ -97,14 +110,14 @@ flowchart LR
     Providers -. implements .-> Ports
 ```
 
-| Component | Responsibility | Must not own |
-| --- | --- | --- |
-| Room application | Create, enter, authorize, clipboard, settings, close | HTTP cookies, SQL syntax, page state |
-| File application | File policy, quota reservation, metadata coordination, deletion compensation | Multipart parsing, filesystem paths, vendor SDK types |
-| Account application | Verification, registration, login/logout, Guest-room claim, My ShareRooms | SMTP transport, servlet requests |
-| Billing application | Checkout/portal intent and subscription-to-plan policy | Stripe JSON/HTTP details, browser redirect success claims |
-| Lifecycle application | Logical expiry checks, token cleanup, content purge orchestration | Scheduler framework annotations, provider-specific delete calls |
-| Domain model | Room/account/file values, plan limits, lifecycle and invariants | Time lookup, environment, database, network |
+| Component | Use cases and requirements | Responsibility | Must not own |
+| --- | --- | --- | --- |
+| Room application | UC-01-UC-04, UC-06; FR-01-FR-14 | Create, enter, authorize, clipboard, settings, close | HTTP cookies, SQL syntax, page state |
+| File application | UC-05; FR-15-FR-17, INV-11 | File policy, quota reservation, metadata coordination, deletion compensation | Multipart parsing, filesystem paths, vendor SDK types |
+| Account application | UC-07-UC-08; FR-18-FR-23, INV-12 | Verification, registration, login/logout, Guest-room claim, My ShareRooms | SMTP transport, servlet requests |
+| Billing application | UC-09; FR-24-FR-26, INV-10 | Checkout/portal intent and subscription-to-plan policy | Stripe JSON/HTTP details, browser redirect success claims |
+| Lifecycle application | UC-10; FR-27-FR-28, QR-10 | Logical expiry checks, credential cleanup, content purge orchestration | Scheduler framework annotations, provider-specific delete calls |
+| Domain model | INV-01-INV-12 | Room/account/file values, plan limits, lifecycle and invariants | Time lookup, environment, database, network |
 
 ## Clean Architecture dependency rule
 
@@ -125,6 +138,9 @@ point inward. The application layer owns each required port; an outer adapter
 implements it.
 
 ## Use-case boundary pattern
+
+The following example is the application shape derived from UC-01. The names
+are a proposal, not a requirement to predict every eventual class.
 
 ```mermaid
 classDiagram
@@ -170,19 +186,31 @@ classDiagram
 ```
 
 Transport validation answers “is the request shaped correctly?” The interactor
-answers “is this operation allowed for this actor, plan, and state?” Output
-boundaries return product results and stable errors; an HTTP presenter selects
-status, JSON, cookies, and headers.
+answers “is this operation allowed for this actor, plan, and state?” Domain
+objects preserve invariant-valid state. Output boundaries return product
+results and stable errors; an HTTP presenter selects status, JSON, cookies,
+and headers.
+
+## Validation and decision ownership
+
+| Decision | Owner | Example |
+| --- | --- | --- |
+| Request shape | Input adapter | Required JSON field is absent or a multipart part is unreadable. |
+| Value validity | Value object | A `RoomCode` cannot represent the wrong shape or case. |
+| Business permission/policy | Use case and domain owner | A visitor cannot change room policy; a lifetime cannot exceed the snapshot. |
+| Atomic consistency | Gateway adapter under application contract | Final entry, expected version, unique code/email, and event claim. |
+| External translation | Output/provider adapter | Map a use-case failure to HTTP or a provider payload to a billing event. |
+| Presentation recovery | Web interface | Preserve form data, explain refresh, or replace the workspace after closure. |
 
 ## Port catalogue
 
-| Application | Required ports owned by the application layer |
-| --- | --- |
-| Room | room gateway, code generator, password hash, clock, owner identity, room-token issuer |
-| File | room authorization, file metadata gateway, storage, malware scan/quarantine, clock |
-| Account | account, verification, attempt, session and Guest-room-claim gateways; password hash; mail; clock |
-| Billing | billing provider, account gateway, event-claim gateway, signature verification, clock |
-| Lifecycle | room/file/token/session/verification gateways, storage, clock, operational event sink |
+| Application | Required ports owned by the application layer | Main use cases |
+| --- | --- | --- |
+| Room | room gateway, code generator, password protection, clock, owner identity, room-grant issuer | UC-01-UC-04, UC-06 |
+| File | room authorization, reservation/file metadata gateway, object storage, malware scan/quarantine, clock | UC-05 |
+| Account | account, challenge, attempt, session and Guest-room-claim gateways; password protection; mail; clock | UC-07-UC-08 |
+| Billing | hosted billing provider, account gateway, event-claim gateway, event-authentication port, clock | UC-09 |
+| Lifecycle | room/file/grant/session/challenge gateways, storage, clock, operational event sink, cleanup-claim port | UC-10 |
 
 ## Data ownership and transaction boundaries
 
@@ -247,18 +275,13 @@ No module becomes a network service merely to match an organizational diagram.
 A component is extracted only when independent scaling, security isolation, or
 team ownership outweighs distributed-system cost.
 
-## Alternatives rejected at inception
+## Architecture decisions
 
-- **Microservices:** too much deployment, consistency, and tracing overhead for
-  ten tightly related use cases.
-- **Browser-only peer transfer:** unreliable NAT/browser support and no durable
-  policy enforcement for asynchronous handoff.
-- **Files in PostgreSQL:** makes large streaming, backup, and expiry cleanup
-  unnecessarily expensive.
-- **JWT for all authorization:** revocation and room-scoped expiry are simpler
-  with opaque server-side tokens.
-- **Framework entities as domain model:** couples business rules to JDBC/JSON
-  and prevents isolated use-case tests.
+Alternatives, consequences, and review triggers are not hidden in this
+component description. They are recorded in the ADRs for modular-monolith
+delivery, Java/Spring, server-side opaque credentials, transactional metadata,
+external file objects, hosted billing, plan snapshots, and retention/code
+reuse. See [9. Architecture decision records](09-architecture-decisions.md).
 
 ## Architecture approval gate
 
@@ -270,3 +293,7 @@ Before code is scaffolded:
 - Guest-room claim and 24-hour purge are represented in component ownership;
 - deployment and future scaling do not require in-memory session affinity;
 - unit tests can execute all policy with fake ports and a controlled clock.
+- every architecture driver links back to FR, QR, INV, or a documented
+  operational constraint;
+- each consequential technology choice has an ADR with alternatives and a
+  review trigger.
