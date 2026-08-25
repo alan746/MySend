@@ -96,9 +96,9 @@ export function HomeExperience() {
               timer ends, the room does too.
             </p>
             <div className="hero-notes" aria-label="Product highlights">
-              <span>No app to install</span>
-              <span>Case-insensitive codes</span>
-              <span>You control the close</span>
+              <span>Works across devices</span>
+              <span>Codes ignore case</span>
+              <span>Close anytime</span>
             </div>
           </div>
 

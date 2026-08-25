@@ -2349,3 +2349,384 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Readability and visual foundation */
+
+:root {
+  --ink: #181a14;
+  --ink-soft: #292c23;
+  --paper: #f5f3ea;
+  --paper-bright: #fffef9;
+  --line: #c9c6ba;
+  --muted: #5f6258;
+  --lime: #ccff3f;
+  --lime-deep: #b8ed28;
+  --blue: #4f8fe8;
+  --danger: #b8322a;
+  --shadow: 0 18px 48px rgb(24 26 20 / 0.12);
+}
+
+body {
+  font-family: "Manrope Variable", "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.home-top {
+  min-height: auto;
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header {
+  height: 72px;
+  border-color: var(--line);
+}
+
+.site-header nav {
+  gap: 28px;
+}
+
+.site-header nav a {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.nav-account {
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+
+.hero {
+  min-height: calc(100dvh - 72px);
+  padding: 64px 0 78px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(440px, 0.72fr);
+  gap: clamp(56px, 7vw, 112px);
+}
+
+.eyebrow,
+.section-kicker {
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+}
+
+.hero h1,
+.settings-heading h1 {
+  max-width: 700px;
+  margin: 24px 0 24px;
+  font-size: clamp(58px, 6.5vw, 88px);
+  font-weight: 760;
+  line-height: 0.94;
+  letter-spacing: -0.065em;
+}
+
+.hero h1 em,
+.settings-heading h1 em {
+  color: var(--ink);
+  font-weight: 560;
+  text-decoration: underline;
+  text-decoration-color: var(--lime-deep);
+  text-decoration-thickness: 0.16em;
+  text-underline-offset: 0.05em;
+}
+
+.hero-copy > p {
+  max-width: 540px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.hero-notes {
+  margin-top: 42px;
+  padding-top: 20px;
+  gap: 14px 26px;
+  border-color: var(--line);
+}
+
+.hero-notes span {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 620;
+  text-transform: none;
+}
+
+.room-action-card {
+  min-height: 520px;
+  border: 1px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 12px 12px 0 var(--lime);
+  transform: none;
+}
+
+.room-tabs button {
+  min-height: 70px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.room-form {
+  padding: 34px;
+}
+
+.choice-field legend,
+.text-field > span,
+.code-field > span {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.choice-field label strong,
+.text-field input,
+.text-field select,
+.code-field input {
+  font-size: 15px;
+}
+
+.choice-field label small,
+.text-field > span small,
+.join-intro p,
+.form-footnote {
+  font-size: 12px;
+}
+
+.choice-field label,
+.text-field input,
+.text-field select,
+.code-field input,
+.primary-action {
+  border-radius: 8px;
+}
+
+.primary-action {
+  min-height: 54px;
+  font-size: 14px;
+}
+
+.how-section,
+.plans-section {
+  padding-top: 96px;
+  padding-bottom: 96px;
+}
+
+.how-heading h2,
+.plans-copy h2,
+.room-heading h1,
+.active-rooms h2 {
+  font-size: clamp(40px, 4.5vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.how-heading p,
+.plans-copy p,
+.feature-card > p,
+.plan-card > p,
+.plan-card li {
+  font-size: 14px;
+}
+
+.feature-card,
+.plan-card {
+  border-radius: 12px;
+}
+
+.feature-card > h3 {
+  font-size: 25px;
+}
+
+.demo-top,
+.file-demo span,
+.timer-demo small {
+  font-size: 11px;
+}
+
+.clipboard-demo p,
+.file-demo b {
+  font-size: 13px;
+}
+
+.plans-section {
+  background: #ece9df;
+  border-top: 1px solid var(--line);
+}
+
+.plan-card > div > span,
+.plan-card > a {
+  font-size: 13px;
+}
+
+.site-footer p,
+.site-footer a {
+  font-size: 13px;
+}
+
+.auth-page {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.auth-page button:focus-visible,
+.auth-page a:focus-visible {
+  outline-color: var(--blue);
+}
+
+.auth-layout {
+  min-height: calc(100dvh - 72px);
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 0.62fr);
+}
+
+.auth-story {
+  padding-top: 72px;
+  padding-bottom: 72px;
+}
+
+.auth-context {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-story h1 {
+  max-width: 650px;
+  font-size: clamp(48px, 5.4vw, 74px);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+
+.auth-story-copy {
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.auth-promise {
+  border-color: var(--line);
+}
+
+.auth-promise p,
+.auth-promise a {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-promise a {
+  color: var(--ink);
+}
+
+.auth-panel {
+  border-color: var(--line);
+  background: var(--paper-bright);
+}
+
+.auth-form-heading h2 {
+  color: var(--ink);
+  font-size: 36px;
+}
+
+.auth-form-heading p,
+.auth-switch,
+.auth-back {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-focused-form .text-field > span,
+.auth-focused-form .code-field > span,
+.auth-switch a,
+.auth-back {
+  color: var(--ink);
+}
+
+.auth-focused-form .text-field > span small {
+  color: var(--muted);
+}
+
+.auth-focused-form .text-field input,
+.auth-focused-form .code-field input {
+  height: 54px;
+  border-color: #9f9d93;
+  border-radius: 8px;
+}
+
+.auth-submit {
+  min-height: 54px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.auth-notice,
+.auth-error,
+.auth-page .development-code {
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.auth-notice {
+  color: var(--ink);
+}
+
+.auth-error {
+  color: #8e241d;
+}
+
+.auth-page .development-code {
+  color: var(--ink);
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    height: 68px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding-top: 44px;
+    gap: 48px;
+  }
+
+  .hero h1,
+  .settings-heading h1 {
+    font-size: clamp(48px, 14vw, 64px);
+  }
+
+  .hero-copy > p {
+    font-size: 16px;
+  }
+
+  .room-action-card {
+    box-shadow: 7px 7px 0 var(--lime);
+  }
+
+  .room-form {
+    padding: 26px 20px;
+  }
+
+  .auth-layout {
+    min-height: auto;
+  }
+
+  .auth-story h1 {
+    font-size: clamp(42px, 12vw, 58px);
+  }
+
+  .auth-panel {
+    border-color: var(--line);
+    background: var(--paper-bright);
+    margin: 0 -17px;
+    padding-right: 17px;
+    padding-left: 17px;
+  }
+}
