@@ -149,6 +149,8 @@ test("keeps API contracts and metadata product-specific", async () => {
   assert.match(layout, /summary_large_image/);
   assert.match(api, /NEXT_PUBLIC_API_BASE_URL/);
   assert.match(api, /credentials:\s*"include"/);
+  assert.match(api, /AbortSignal\.timeout\(REQUEST_TIMEOUT_MS\)/);
+  assert.match(api, /The request timed out\. Please try again\./);
   assert.match(packageJson, /node dist\/standalone\/server\.js/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.doesNotMatch(packageJson, /wrangler|cloudflare/i);
