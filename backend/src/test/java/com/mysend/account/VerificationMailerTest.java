@@ -54,7 +54,12 @@ class VerificationMailerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.from").value("MySend <no-reply@mysend.app>"))
                 .andExpect(jsonPath("$.to[0]").value("person@example.com"))
-                .andExpect(jsonPath("$.subject").value("Your MySend verification code"))
+                .andExpect(jsonPath("$.subject").value("Verify your MySend email"))
+                .andExpect(jsonPath("$.html").value(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("Finish setting up your account."),
+                        org.hamcrest.Matchers.containsString("123456"),
+                        org.hamcrest.Matchers.containsString("https://mysend.app")
+                )))
                 .andExpect(jsonPath("$.text").value(org.hamcrest.Matchers.containsString("123456")))
                 .andRespond(withSuccess(
                         "{\"id\":\"email-id\"}",
@@ -69,7 +74,11 @@ class VerificationMailerTest {
     void sendsPasswordCodeWithDistinctCopy() {
         server.expect(once(), requestTo("https://api.resend.com/emails"))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(jsonPath("$.subject").value("Your MySend password code"))
+                .andExpect(jsonPath("$.subject").value("Reset your MySend password"))
+                .andExpect(jsonPath("$.html").value(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("Confirm your password change."),
+                        org.hamcrest.Matchers.containsString("654321")
+                )))
                 .andExpect(jsonPath("$.text").value(org.hamcrest.Matchers.containsString("654321")))
                 .andRespond(withSuccess(
                         "{\"id\":\"password-email-id\"}",
