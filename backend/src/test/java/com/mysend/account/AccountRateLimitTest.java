@@ -28,6 +28,7 @@ class AccountRateLimitTest {
 
     private AccountRepository accounts;
     private EmailVerificationRepository verifications;
+    private PasswordVerificationRepository passwordVerifications;
     private AuthenticationAttemptRepository attempts;
     private VerificationMailer mailer;
     private AccountSessionService sessions;
@@ -38,6 +39,7 @@ class AccountRateLimitTest {
     void setUp() {
         accounts = mock(AccountRepository.class);
         verifications = mock(EmailVerificationRepository.class);
+        passwordVerifications = mock(PasswordVerificationRepository.class);
         attempts = mock(AuthenticationAttemptRepository.class);
         mailer = mock(VerificationMailer.class);
         sessions = mock(AccountSessionService.class);
@@ -185,6 +187,7 @@ class AccountRateLimitTest {
         return new AccountService(
                 accounts,
                 verifications,
+                passwordVerifications,
                 attempts,
                 mailer,
                 sessions,

@@ -48,6 +48,11 @@ public class AccountSessionService {
         return token;
     }
 
+    public String replace(Account account) {
+        sessions.deleteForAccount(account.id());
+        return issue(account);
+    }
+
     public Optional<Account> current(HttpServletRequest request) {
         return CookieSupport.read(request, SESSION_COOKIE)
                 .flatMap(token -> sessions.findAccountId(token, clock.instant()))

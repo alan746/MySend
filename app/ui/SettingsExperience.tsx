@@ -1,17 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Account, api } from "../lib/api";
 import { SiteHeader } from "./SiteHeader";
 
 const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
+type PasswordCodeResult = {
+  expiresAt: string;
+  developmentCode?: string | null;
+};
+
 export function SettingsExperience() {
   const [account, setAccount] = useState<Account | null>(null);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const [securityStep, setSecurityStep] = useState<"idle" | "code">("idle");
+  const [securityCode, setSecurityCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [securityNotice, setSecurityNotice] = useState("");
+  const [securityDevelopmentCode, setSecurityDevelopmentCode] = useState("");
 
   useEffect(() => {
     api<Account>("/api/auth/me")
@@ -45,6 +56,46 @@ export function SettingsExperience() {
     } catch (caught) {
       setError(messageOf(caught));
       setBusy(false);
+    }
+  }
+
+  async function requestPasswordChangeCode() {
+    setSecurityBusy(true);
+    setError("");
+    setSecurityNotice("");
+    try {
+      const result = await api<PasswordCodeResult>("/api/auth/password/change/code", {
+        method: "POST",
+      });
+      setSecurityDevelopmentCode(result.developmentCode || "");
+      setSecurityStep("code");
+      setSecurityNotice("A six-digit code was sent to your account email.");
+    } catch (caught) {
+      setError(messageOf(caught));
+    } finally {
+      setSecurityBusy(false);
+    }
+  }
+
+  async function changePassword(event: FormEvent) {
+    event.preventDefault();
+    setSecurityBusy(true);
+    setError("");
+    try {
+      const updated = await api<Account>("/api/auth/password/change", {
+        method: "POST",
+        body: JSON.stringify({ code: securityCode, newPassword }),
+      });
+      setAccount(updated);
+      setSecurityStep("idle");
+      setSecurityCode("");
+      setNewPassword("");
+      setSecurityDevelopmentCode("");
+      setSecurityNotice("Password changed. Other sessions have been signed out.");
+    } catch (caught) {
+      setError(messageOf(caught));
+    } finally {
+      setSecurityBusy(false);
     }
   }
 
@@ -126,10 +177,75 @@ export function SettingsExperience() {
           <p>
             Password changes require a six-digit code sent to your account email.
           </p>
-          <button className="panel-button" type="button" disabled>
-            Change password
-            <span>Security setup in progress</span>
-          </button>
+          {securityNotice && (
+            <div className="security-notice" role="status">{securityNotice}</div>
+          )}
+          {securityDevelopmentCode && securityStep === "code" && (
+            <div className="security-notice">
+              Local password code: <strong>{securityDevelopmentCode}</strong>
+            </div>
+          )}
+          {securityStep === "idle" ? (
+            <button
+              className="panel-button"
+              type="button"
+              disabled={securityBusy}
+              onClick={() => void requestPasswordChangeCode()}
+            >
+              {securityBusy ? "Sending code" : "Email a password code"}
+              <span>→</span>
+            </button>
+          ) : (
+            <form className="security-form" onSubmit={changePassword}>
+              <label className="security-field security-code">
+                <span>Password code</span>
+                <input
+                  value={securityCode}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  onChange={(event) => setSecurityCode(
+                    event.target.value.replace(/\D/g, "").slice(0, 6),
+                  )}
+                />
+              </label>
+              <label className="security-field">
+                <span>New password <small>10+ characters</small></span>
+                <input
+                  type="password"
+                  required
+                  minLength={10}
+                  maxLength={100}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                />
+              </label>
+              <div className="security-actions">
+                <button
+                  className="panel-button"
+                  disabled={securityBusy || securityCode.length !== 6 || newPassword.length < 10}
+                >
+                  {securityBusy ? "Updating password" : "Change password"}
+                  <span>→</span>
+                </button>
+                <button
+                  className="security-cancel"
+                  type="button"
+                  onClick={() => {
+                    setSecurityStep("idle");
+                    setSecurityCode("");
+                    setNewPassword("");
+                    setSecurityDevelopmentCode("");
+                    setSecurityNotice("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </article>
 
         <article className="settings-panel settings-panel--membership">

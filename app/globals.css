@@ -2918,6 +2918,89 @@ a {
   line-height: 1.6;
 }
 
+.security-notice {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid #aebc74;
+  border-radius: 8px;
+  background: #f1f5dd;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.security-form {
+  margin-top: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.security-field {
+  display: grid;
+  gap: 8px;
+}
+
+.security-field > span {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.security-field small {
+  color: var(--muted);
+  font: inherit;
+}
+
+.security-field input {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid #9f9d93;
+  border-radius: 8px;
+  background: var(--paper-bright);
+  color: var(--ink);
+  font: inherit;
+}
+
+.security-field input:focus {
+  border-color: var(--ink);
+  outline: 3px solid color-mix(in srgb, var(--lime) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.security-code input {
+  letter-spacing: 0.32em;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.security-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.security-actions .panel-button {
+  margin-top: 0;
+}
+
+.security-cancel {
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .settings-panel--membership {
   display: grid;
   grid-template-columns: minmax(230px, 0.65fr) minmax(300px, 1fr);
@@ -3389,6 +3472,19 @@ body {
   min-height: 54px;
   border-radius: 8px;
   font-size: 14px;
+}
+
+.auth-forgot {
+  margin-top: -4px;
+  justify-self: end;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  text-underline-offset: 4px;
+}
+
+.auth-forgot:hover {
+  color: var(--ink);
 }
 
 .auth-notice,

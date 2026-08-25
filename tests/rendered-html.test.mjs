@@ -98,21 +98,24 @@ test("server-renders a room-specific loading state", async () => {
   assert.match(html, /role="status"/);
 });
 
-test("server-renders authentication, dashboard, and account settings routes", async () => {
-  const [loginResponse, signupResponse, dashboardResponse, settingsResponse] = await Promise.all([
+test("server-renders authentication, recovery, dashboard, and account settings routes", async () => {
+  const [loginResponse, signupResponse, recoveryResponse, dashboardResponse, settingsResponse] = await Promise.all([
     render("/login"),
     render("/signup"),
+    render("/forgot-password"),
     render("/dashboard"),
     render("/settings"),
   ]);
   assert.equal(loginResponse.status, 200);
   assert.equal(signupResponse.status, 200);
+  assert.equal(recoveryResponse.status, 200);
   assert.equal(dashboardResponse.status, 200);
   assert.equal(settingsResponse.status, 200);
 
-  const [login, signup, dashboard, settings] = await Promise.all([
+  const [login, signup, recovery, dashboard, settings] = await Promise.all([
     loginResponse.text(),
     signupResponse.text(),
+    recoveryResponse.text(),
     dashboardResponse.text(),
     settingsResponse.text(),
   ]);
@@ -120,9 +123,12 @@ test("server-renders authentication, dashboard, and account settings routes", as
   assert.match(login, /Come back to your rooms/);
   assert.match(login, /Log in/);
   assert.match(login, /Create an account/);
+  assert.match(login, /Forgot password/);
   assert.match(signup, /Keep the rooms you create/);
   assert.match(signup, /Create your account/);
   assert.match(signup, /Send verification code/);
+  assert.match(recovery, /Reset password/);
+  assert.match(recovery, /Send password code/);
   assert.match(dashboard, /Opening your dashboard/);
   assert.match(settings, /Opening account settings/);
   assert.doesNotMatch(settings, /Choose a strong password/);
@@ -136,7 +142,24 @@ test("keeps Premium in maintenance behind authenticated settings", async () => {
 
   assert.match(settingsSource, /Premium is being updated/);
   assert.match(settingsSource, /if \(!account\)/);
+  assert.match(settingsSource, /Membership status/);
+  assert.match(settingsSource, /Email a password code/);
   assert.doesNotMatch(settingsSource, /api<Room|\/api\/rooms/);
+});
+
+test("connects password recovery and authenticated password changes", async () => {
+  const [authSource, recoverySource, settingsSource] = await Promise.all([
+    readFile(new URL("../app/ui/AuthExperience.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui/PasswordResetExperience.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui/SettingsExperience.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(authSource, /href="\/forgot-password"/);
+  assert.match(recoverySource, /\/api\/auth\/password\/code/);
+  assert.match(recoverySource, /\/api\/auth\/password\/reset/);
+  assert.match(settingsSource, /\/api\/auth\/password\/change\/code/);
+  assert.match(settingsSource, /\/api\/auth\/password\/change/);
+  assert.match(settingsSource, /Other sessions have been signed out/);
 });
 
 test("opens the dashboard after authentication and exposes account navigation", async () => {

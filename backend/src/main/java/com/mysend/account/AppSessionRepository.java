@@ -53,6 +53,12 @@ public class AppSessionRepository {
                 .update();
     }
 
+    public void deleteForAccount(String accountId) {
+        jdbc.sql("delete from app_sessions where account_id = :accountId")
+                .param("accountId", accountId)
+                .update();
+    }
+
     public void deleteExpired(Instant now) {
         jdbc.sql("delete from app_sessions where expires_at_ms <= :now")
                 .param("now", now.toEpochMilli())

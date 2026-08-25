@@ -66,6 +66,21 @@ class VerificationMailerTest {
     }
 
     @Test
+    void sendsPasswordCodeWithDistinctCopy() {
+        server.expect(once(), requestTo("https://api.resend.com/emails"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.subject").value("Your MySend password code"))
+                .andExpect(jsonPath("$.text").value(org.hamcrest.Matchers.containsString("654321")))
+                .andRespond(withSuccess(
+                        "{\"id\":\"password-email-id\"}",
+                        MediaType.APPLICATION_JSON
+                ));
+
+        assertThat(mailer.deliverPasswordCode("person@example.com", "654321")).isTrue();
+        server.verify();
+    }
+
+    @Test
     void mapsResendFailureToServiceUnavailable() {
         server.expect(once(), requestTo("https://api.resend.com/emails"))
                 .andRespond(withServerError());

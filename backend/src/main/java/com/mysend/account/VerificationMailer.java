@@ -25,6 +25,32 @@ public class VerificationMailer {
     }
 
     public boolean deliver(String email, String code) {
+        return deliverMessage(
+                email,
+                "Your MySend verification code",
+                """
+                        Your MySend verification code is %s.
+
+                        It expires in 10 minutes. If you did not request this code,
+                        you can ignore this message.
+                        """.formatted(code)
+        );
+    }
+
+    public boolean deliverPasswordCode(String email, String code) {
+        return deliverMessage(
+                email,
+                "Your MySend password code",
+                """
+                        Your MySend password code is %s.
+
+                        It expires in 10 minutes and can be used once. If you did not
+                        request a password change, you can ignore this message.
+                        """.formatted(code)
+        );
+    }
+
+    private boolean deliverMessage(String email, String subject, String text) {
         if (!properties.mailDeliveryEnabled()) {
             return false;
         }
@@ -34,13 +60,8 @@ public class VerificationMailer {
                     .body(new ResendEmailRequest(
                             properties.mailFrom(),
                             List.of(email),
-                            "Your MySend verification code",
-                            """
-                                    Your MySend verification code is %s.
-
-                                    It expires in 10 minutes. If you did not request this code,
-                                    you can ignore this message.
-                                    """.formatted(code)
+                            subject,
+                            text
                     ))
                     .retrieve()
                     .toBodilessEntity();
