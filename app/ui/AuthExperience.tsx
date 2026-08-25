@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Account, api } from "../lib/api";
 import { SiteHeader } from "./SiteHeader";
 
@@ -16,7 +15,6 @@ type VerificationResult = {
 };
 
 export function AuthExperience({ mode }: { mode: AuthMode }) {
-  const router = useRouter();
   const [step, setStep] = useState<RegisterStep>("details");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,8 +33,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      router.replace("/settings");
-      router.refresh();
+      window.location.replace("/settings");
     } catch (caught) {
       setError(messageOf(caught));
       setBusy(false);
@@ -75,8 +72,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
         method: "POST",
         body: JSON.stringify({ email, code }),
       });
-      router.replace("/settings");
-      router.refresh();
+      window.location.replace("/settings");
     } catch (caught) {
       setError(messageOf(caught));
       setBusy(false);
