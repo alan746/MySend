@@ -19,7 +19,9 @@ changing client behaviour.
 | --- | --- | --- |
 | `/` | Explain the product, create a room, or start room entry | None |
 | `/room/{code}` | Clipboard, file board, room status, and owner controls | Owner identity or room access token |
-| `/settings` | Register, sign in/out, compare plans, billing, and My ShareRooms | Page is public; account actions require a session |
+| `/login` | Authenticate an existing account | None |
+| `/signup` | Create and verify a new account | None |
+| `/settings` | Show account limits, billing, sign out, and My ShareRooms | Account session; visitors receive a login gate |
 
 The home page must keep Create and Join above supporting explanation. Settings
 must not imply that registration is required for the core sharing path.
@@ -30,9 +32,8 @@ must not imply that registration is required for the core sharing path.
   accents rather than interchangeable dashboard cards.
 - Let type scale and position create hierarchy; do not make every element the
   same font, weight, radius, or alignment.
-- Reserve the bright lime accent for active choice, status, or action. The
-  purple Settings accent distinguishes account context without recolouring the
-  full product.
+- Reserve the bright lime accent for active choice, status, or action. Account
+  pages use the same locked palette rather than introducing a second accent.
 - Use direct verbs: “Create ShareRoom”, “Join”, “Copy access code”, “Close
   room”. Avoid promotional filler inside task surfaces.
 - Room code, countdown, entries, privacy, and storage must remain scannable
@@ -67,9 +68,10 @@ never silently replace local or remote text.
 
 ### Settings
 
-Unauthenticated state exposes Sign in and Create account tabs, the Premium
-comparison, and a clear route back to guest use. Authenticated state adds
-account identity, sign out, My ShareRooms, and either Upgrade or Manage billing.
+Login and signup are focused routes rather than tabs inside Settings. A visitor
+who opens Settings receives a short login gate with routes to login, signup,
+and guest use. Authenticated Settings shows account identity, sign out, My
+ShareRooms, and either Upgrade or Manage billing.
 
 Registration is a two-step state machine: credentials → verification code →
 authenticated Free account. The interface displays code expiry and resend

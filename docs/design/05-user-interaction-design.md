@@ -15,7 +15,9 @@ set of plan, authorization, or lifecycle rules in the browser.
 | Home - Join | Enter an open room using the minimum required credential | FR-05-FR-08, FR-30 |
 | ShareRoom - Status | Understand room identity, authority, capacity, and closure | FR-09-FR-12, FR-27, FR-29 |
 | ShareRoom - Workspace | Exchange clipboard text and files safely | FR-13-FR-17, FR-30 |
-| Settings - Account | Register once, sign in/out, and find active rooms | FR-18-FR-23, FR-30 |
+| Login | Sign in to an existing account | FR-21, FR-30 |
+| Signup | Register once through email verification | FR-18-FR-20, FR-30 |
+| Settings - Account | Sign out and find active rooms | FR-22-FR-23, FR-30 |
 | Settings - Billing | Compare, upgrade, and manage Premium | FR-24-FR-26, FR-30 |
 
 ## Interaction goals
@@ -48,11 +50,12 @@ flowchart TD
     OwnerRoom --> Controls["Owner policy and close"]
     Workspace --> Closed["Closed / expired state"]
     Controls --> Closed
-    Home --> Settings["Optional Settings"]
-    Settings --> Auth{"Signed in?"}
-    Auth -->|No| RegisterLogin["Register or sign in"]
-    Auth -->|Yes| MyRooms["My ShareRooms and billing"]
-    RegisterLogin --> MyRooms
+    Home --> Auth{"Optional account"}
+    Auth -->|Existing| Login["Log in"]
+    Auth -->|New| Signup["Create account and verify email"]
+    Login --> Settings["Settings"]
+    Signup --> Settings
+    Settings --> MyRooms["My ShareRooms and billing"]
 ```
 
 ## Home wireframe
@@ -61,7 +64,7 @@ Desktop composition:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│ MySend                         How it works   Plans   Settings        │
+│ MySend                    How it works   Plans   Log in   Sign up    │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  SEND WHAT YOU NEED.            ┌──────────────┬──────────────┐      │
@@ -162,17 +165,24 @@ an unauthorized request from a modified or stale client.
 Mobile order is room status → clipboard → file board → owner controls. The two
 workspace surfaces do not shrink into unreadable side-by-side columns.
 
-## Settings wireframe
+## Authentication and Settings wireframes
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│ YOUR ROOMS, YOUR LIMITS                                              │
+│ MySend                              Log in                  Sign up   │
+├────────────────────────────────┬─────────────────────────────────────┤
+│ COME BACK TO YOUR ROOMS        │ LOG IN                              │
+│ Guest sharing stays available  │ email                               │
+│ without an account.            │ password                            │
+│                                │ primary action                      │
+└────────────────────────────────┴─────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ ROOMS AND LIMITS                                                     │
 ├───────────────────────────────┬──────────────────────────────────────┤
-│ SIGN IN | CREATE ACCOUNT      │ PREMIUM   CA$9.99 / MONTH           │
-│                               │                                    │
-│ email                         │ Free → Premium limit comparison     │
-│ password                      │ upgrade/manage billing action       │
-│ verification step when new   │                                    │
+│ signed-in account and limits  │ PREMIUM   CA$9.99 / MONTH           │
+│ sign-out action               │ Free to Premium comparison          │
+│                               │ upgrade/manage billing action       │
 ├───────────────────────────────┴──────────────────────────────────────┤
 │ MY SHAREROOMS: active account-owned rooms                           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -187,7 +197,7 @@ Authentication interaction:
 - Successful verification signs the user in and claims still-open Guest rooms
   owned by the same device before loading My ShareRooms.
 - Login failure does not identify whether email or password was wrong.
-- Sign out returns Settings to unauthenticated state; guest Create/Join remains
+- Sign out returns Settings to its login gate; guest Create/Join remains
   available from Home.
 
 Billing interaction:
@@ -199,9 +209,9 @@ Billing interaction:
   completed upgrade.
 - Premium members see Manage billing rather than another Upgrade action.
 
-Settings presents FR-18-FR-26 through UC-07-UC-09. Registration verification
-is required only for first account creation; ordinary login remains an
-email/password flow.
+Login, Signup, and Settings together present FR-18-FR-26 through UC-07-UC-09.
+Registration verification is required only for first account creation;
+ordinary login remains an email/password flow.
 
 ## Feedback and failure states
 
