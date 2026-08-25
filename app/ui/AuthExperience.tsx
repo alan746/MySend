@@ -33,7 +33,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      window.location.replace("/settings");
+      window.location.replace("/dashboard");
     } catch (caught) {
       setError(messageOf(caught));
       setBusy(false);
@@ -72,7 +72,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
         method: "POST",
         body: JSON.stringify({ email, code }),
       });
-      window.location.replace("/settings");
+      window.location.replace("/dashboard");
     } catch (caught) {
       setError(messageOf(caught));
       setBusy(false);
