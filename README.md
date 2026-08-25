@@ -14,6 +14,18 @@
   </tr>
 </table>
 
+## Design baseline
+
+- **Requirements:** **[Read the complete product baseline →](docs/design/01-requirements.md)**
+
+  Functional requirements, quality requirements, invariants, membership limits,
+  scope boundaries, and acceptance checks.
+- **Design process:** **[Open the ordered design process →](docs/design/README.md)**
+
+  Follow the project from the product problem and requirements through use
+  cases, domain modelling, architecture, interaction, interfaces, security,
+  and recorded decisions.
+
 MySend is deployed on **Railway**. The website and Java API run as separate
 Railway services, application records live in Railway PostgreSQL, and room
 uploads use a Railway Volume mounted to the API. Resend delivers account
