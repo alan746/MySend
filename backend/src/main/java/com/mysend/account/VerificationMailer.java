@@ -27,30 +27,27 @@ public class VerificationMailer {
     public boolean deliver(String email, String code) {
         return deliverMessage(
                 email,
-                "Your MySend verification code",
-                """
-                        Your MySend verification code is %s.
-
-                        It expires in 10 minutes. If you did not request this code,
-                        you can ignore this message.
-                        """.formatted(code)
+                SecurityEmailTemplate.accountVerification(
+                        code,
+                        properties.appBaseUrl()
+                )
         );
     }
 
     public boolean deliverPasswordCode(String email, String code) {
         return deliverMessage(
                 email,
-                "Your MySend password code",
-                """
-                        Your MySend password code is %s.
-
-                        It expires in 10 minutes and can be used once. If you did not
-                        request a password change, you can ignore this message.
-                        """.formatted(code)
+                SecurityEmailTemplate.passwordChange(
+                        code,
+                        properties.appBaseUrl()
+                )
         );
     }
 
-    private boolean deliverMessage(String email, String subject, String text) {
+    private boolean deliverMessage(
+            String email,
+            SecurityEmailTemplate.Message message
+    ) {
         if (!properties.mailDeliveryEnabled()) {
             return false;
         }
@@ -60,8 +57,9 @@ public class VerificationMailer {
                     .body(new ResendEmailRequest(
                             properties.mailFrom(),
                             List.of(email),
-                            subject,
-                            text
+                            message.subject(),
+                            message.html(),
+                            message.text()
                     ))
                     .retrieve()
                     .toBodilessEntity();
@@ -83,6 +81,7 @@ public class VerificationMailer {
             String from,
             List<String> to,
             String subject,
+            String html,
             String text
     ) {
     }
