@@ -135,6 +135,19 @@ test("keeps Premium in maintenance behind authenticated settings", async () => {
   assert.doesNotMatch(settingsSource, /submitLogin|requestCode|verifyCode/);
 });
 
+test("uses one full-page redirect after authentication succeeds", async () => {
+  const authSource = await readFile(
+    new URL("../app/ui/AuthExperience.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(
+    authSource.match(/window\.location\.replace\("\/settings"\)/g)?.length,
+    2,
+  );
+  assert.doesNotMatch(authSource, /router\.refresh\(\)/);
+});
+
 test("keeps API contracts and metadata product-specific", async () => {
   const [layout, api, packageJson, viteConfig, dockerfile, railwayConfig] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
