@@ -2,17 +2,37 @@
 
 **Send what you need. Keep nothing longer than necessary.**
 
-MySend is a live, short-lived sharing workspace for text and files. Open a
-ShareRoom without creating an account, send one memorable five-character
-code, and let the room disappear when its timer ends.
+## Live website
 
-<p align="center">
-  <a href="https://mysend.app"><strong>Open MySend →</strong></a>
-  &nbsp;&nbsp;·&nbsp;&nbsp;
-  <a href="https://api.mysend.app/actuator/health">API health</a>
-  &nbsp;&nbsp;·&nbsp;&nbsp;
-  <a href="docs/design/01-requirements.md">Requirements</a>
-</p>
+<table width="100%">
+  <tr>
+    <td align="center">
+      <h2><a href="https://mysend.app">OPEN MYSEND.APP →</a></h2>
+      <p><code>https://mysend.app</code></p>
+      <p>Create or join a ShareRoom directly in the production application.</p>
+    </td>
+  </tr>
+</table>
+
+MySend is deployed on **Railway**. The website and Java API run as separate
+Railway services, application records live in Railway PostgreSQL, and room
+uploads use a Railway Volume mounted to the API. Resend delivers account
+security emails from the verified sending domain.
+
+| Production component | Deployment | Public address or storage |
+| --- | --- | --- |
+| Web application | Railway Node.js service | [https://mysend.app](https://mysend.app) |
+| Java API | Railway Spring Boot service | [https://api.mysend.app](https://api.mysend.app) |
+| Application data | Railway PostgreSQL | Private connection from the API |
+| Room files | Railway Volume | Mounted at `/app/uploads` |
+| Security email | Resend HTTPS API | Verified sender domain |
+
+The API address is the backend used by the MySend website; it is not currently
+offered as a versioned public developer API.
+
+MySend is a short-lived sharing workspace for text and files. Open a ShareRoom
+without creating an account, send one memorable five-character code, and let
+the room disappear when its timer ends.
 
 <p align="center">
   <a href="https://mysend.app">
@@ -235,7 +255,7 @@ for both services before merge.
 | Service | Railway root | Public address | Health check |
 | --- | --- | --- | --- |
 | Web | `/` | [https://mysend.app](https://mysend.app) | `/` |
-| API | `/backend` | [https://api.mysend.app](https://api.mysend.app) | `/actuator/health` |
+| API | `/backend` | [https://api.mysend.app](https://api.mysend.app) | [Check API health](https://api.mysend.app/actuator/health) |
 
 Production uses secure cookies, `https://mysend.app` as the allowed web origin,
 Railway PostgreSQL, a volume mounted at `/app/uploads`, and Resend with a
@@ -244,13 +264,14 @@ the repository checks pass.
 
 ## Project documentation
 
-- [Design process](docs/design/README.md) — the required order from product
-  problem through requirements, use cases, domain, architecture, interaction,
-  interfaces, security, and decisions.
-- [Development workflow](docs/development-workflow.md) — issue, branch,
-  commit, pull-request, test, deployment, and release conventions.
-- [Roadmap](docs/roadmap.md) — the work planned beyond the current public
-  release.
+- **Design process:** [Open the complete design sequence →](docs/design/README.md)
+  — product problem, requirements, use cases, domain, architecture,
+  interaction, interfaces, security, and decisions.
+- **Development workflow:** [Open the repository workflow →](docs/development-workflow.md)
+  — issue, branch, commit, pull-request, test, deployment, and release
+  conventions.
+- **Roadmap:** [Open planned updates →](docs/roadmap.md) — work beyond the
+  current public release.
 
 For the complete FR, QR, invariant, plan-limit, and acceptance-test baseline,
 continue to the **[MySend requirements](docs/design/01-requirements.md)**.
