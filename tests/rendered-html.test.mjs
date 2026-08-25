@@ -34,6 +34,8 @@ test("server-renders the MySend create and join experience", async () => {
   assert.match(html, /Join with code/);
   assert.match(html, /MySend/);
   assert.match(html, /Premium/);
+  assert.match(html, /href="\/login"/);
+  assert.match(html, /href="\/signup"/);
   assert.doesNotMatch(html, /react-loading-skeleton/i);
 });
 
@@ -46,14 +48,41 @@ test("server-renders a room-specific loading state", async () => {
   assert.match(html, /role="status"/);
 });
 
-test("shows Premium as updating without an active checkout action", async () => {
-  const response = await render("/settings");
-  assert.equal(response.status, 200);
+test("server-renders focused login, signup, and guarded settings routes", async () => {
+  const [loginResponse, signupResponse, settingsResponse] = await Promise.all([
+    render("/login"),
+    render("/signup"),
+    render("/settings"),
+  ]);
+  assert.equal(loginResponse.status, 200);
+  assert.equal(signupResponse.status, 200);
+  assert.equal(settingsResponse.status, 200);
 
-  const html = await response.text();
-  assert.match(html, /Premium is being updated/);
-  assert.doesNotMatch(html, /Upgrade to Premium/);
-  assert.doesNotMatch(html, /Manage billing/);
+  const [login, signup, settings] = await Promise.all([
+    loginResponse.text(),
+    signupResponse.text(),
+    settingsResponse.text(),
+  ]);
+
+  assert.match(login, /Come back to your rooms/);
+  assert.match(login, /Log in/);
+  assert.match(login, /Create an account/);
+  assert.match(signup, /Keep the rooms you create/);
+  assert.match(signup, /Create your account/);
+  assert.match(signup, /Send verification code/);
+  assert.match(settings, /Checking your account/);
+  assert.doesNotMatch(settings, /Choose a strong password/);
+});
+
+test("keeps Premium in maintenance behind authenticated settings", async () => {
+  const settingsSource = await readFile(
+    new URL("../app/ui/SettingsExperience.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(settingsSource, /Premium is being updated/);
+  assert.match(settingsSource, /if \(!account\)/);
+  assert.doesNotMatch(settingsSource, /submitLogin|requestCode|verifyCode/);
 });
 
 test("keeps API contracts and metadata product-specific", async () => {
@@ -63,7 +92,7 @@ test("keeps API contracts and metadata product-specific", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(layout, /MySend — Send what you need\./);
+  assert.match(layout, /MySend: Send what you need\./);
   assert.match(layout, /summary_large_image/);
   assert.match(api, /NEXT_PUBLIC_API_BASE_URL/);
   assert.match(api, /credentials:\s*"include"/);
