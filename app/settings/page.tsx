@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SettingsExperience } from "../ui/SettingsExperience";
 
 export const metadata: Metadata = {
-  title: "Settings & membership",
-  description: "Manage your MySend account, active rooms, and membership.",
+  title: "Account settings",
+  description: "Manage your MySend email, membership, and account security.",
 };
 
 export default function SettingsPage() {
