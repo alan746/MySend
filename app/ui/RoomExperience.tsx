@@ -447,7 +447,7 @@ function RoomSettings({
                 setVisibility(event.target.value as "PUBLIC" | "PRIVATE")
               }
             >
-              <option value="PUBLIC">Public — code only</option>
+              <option value="PUBLIC">Public: code only</option>
               <option value="PRIVATE">Private</option>
             </select>
           </label>

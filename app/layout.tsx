@@ -14,13 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(baseUrl),
     title: {
-      default: "MySend — Send what you need.",
+      default: "MySend: Send what you need.",
       template: "%s · MySend",
     },
     description:
       "Open a short-lived ShareRoom for text and files, then invite anyone with one memorable five-character code.",
     openGraph: {
-      title: "MySend — Send what you need.",
+      title: "MySend: Send what you need.",
       description:
         "One memorable code. A private, short-lived room for text and files.",
       type: "website",
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "MySend — Send what you need.",
+      title: "MySend: Send what you need.",
       description:
         "One memorable code. A private, short-lived room for text and files.",
       images: [socialImage],

@@ -84,7 +84,6 @@ export function HomeExperience() {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
             <div className="eyebrow">
-              <span className="pulse-dot" />
               Short-lived sharing, by design
             </div>
             <h1 id="hero-title">
@@ -97,9 +96,9 @@ export function HomeExperience() {
               timer ends, the room does too.
             </p>
             <div className="hero-notes" aria-label="Product highlights">
-              <span>01 &nbsp; No app to install</span>
-              <span>02 &nbsp; Case-insensitive codes</span>
-              <span>03 &nbsp; You control the close</span>
+              <span>No app to install</span>
+              <span>Case-insensitive codes</span>
+              <span>You control the close</span>
             </div>
           </div>
 
@@ -219,7 +218,6 @@ export function HomeExperience() {
             ) : (
               <form className="room-form join-form" onSubmit={joinRoom}>
                 <div className="join-intro">
-                  <span className="join-index">05</span>
                   <div>
                     <h2>Five characters. That&apos;s it.</h2>
                     <p>Codes work in uppercase or lowercase.</p>
@@ -278,34 +276,31 @@ export function HomeExperience() {
         </div>
         <div className="feature-grid">
           <article className="feature-card feature-card--ink">
-            <span className="feature-number">01</span>
             <div className="clipboard-demo">
               <div className="demo-top"><span>Clipboard</span><span>1,284 / 10,000</span></div>
-              <p>Meeting link, shipping address, a code snippet — paste it once and pick it up anywhere.</p>
+              <p>Meeting link, shipping address, a code snippet. Paste it once and pick it up anywhere.</p>
               <span className="text-cursor" />
             </div>
             <h3>A clipboard that travels</h3>
             <p>Copy, edit, and save up to your plan limit with conflict-safe updates.</p>
           </article>
           <article className="feature-card feature-card--paper">
-            <span className="feature-number">02</span>
             <div className="file-demo">
               <div><b>Q3-notes.pdf</b><span>2.4 MB</span></div>
               <div><b>handoff.py</b><span>18 KB</span></div>
               <div><b>reference.png</b><span>4.1 MB</span></div>
             </div>
             <h3>A file board, not a maze</h3>
-            <p>PDF, source code, documents, and images — ready to download without folders.</p>
+            <p>PDF, source code, documents, and images, ready to download without folders.</p>
           </article>
           <article className="feature-card feature-card--lime">
-            <span className="feature-number">03</span>
             <div className="timer-demo">
               <small>ROOM 4821K CLOSES IN</small>
               <strong>42:18</strong>
               <div><span style={{ width: "68%" }} /></div>
             </div>
             <h3>Limits you can see</h3>
-            <p>Time remaining, entries used, privacy, and storage stay in the corner — never hidden.</p>
+            <p>Time remaining, entries used, privacy, and storage stay in the corner, never hidden.</p>
           </article>
         </div>
       </section>
@@ -326,7 +321,7 @@ export function HomeExperience() {
               <li>10,000 character clipboard</li>
               <li>1 GB per room</li>
             </ul>
-            <a href="#hero-title">Start free</a>
+            <a href="/signup">Create account</a>
           </article>
           <article className="plan-card plan-card--premium">
             <div><span>Premium</span><strong>$9.99<small>/mo</small></strong></div>
