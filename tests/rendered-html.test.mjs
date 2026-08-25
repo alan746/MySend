@@ -1,26 +1,76 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
+import { createServer } from "node:net";
+import { fileURLToPath } from "node:url";
+import { after, before, test } from "node:test";
+
+const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+let productionServer;
+let productionOrigin;
+
+async function availablePort() {
+  const probe = createServer();
+  probe.listen(0, "127.0.0.1");
+  await once(probe, "listening");
+  const address = probe.address();
+  assert.notEqual(address, null);
+  assert.equal(typeof address, "object");
+  const port = address.port;
+  probe.close();
+  await once(probe, "close");
+  return port;
+}
+
+before(async () => {
+  const port = await availablePort();
+  productionOrigin = `http://127.0.0.1:${port}`;
+  productionServer = spawn(process.execPath, ["dist/standalone/server.js"], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORT: String(port),
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let startupOutput = "";
+  productionServer.stdout.on("data", (chunk) => {
+    startupOutput += chunk;
+  });
+  productionServer.stderr.on("data", (chunk) => {
+    startupOutput += chunk;
+  });
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (productionServer.exitCode !== null) {
+      throw new Error(`Production server exited during startup:\n${startupOutput}`);
+    }
+    try {
+      const response = await fetch(productionOrigin);
+      if (response.ok) return;
+    } catch {
+      // The server has not bound its port yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  throw new Error(`Production server did not become ready:\n${startupOutput}`);
+}, { timeout: 10_000 });
+
+after(async () => {
+  if (productionServer?.exitCode === null) {
+    productionServer.kill();
+    await once(productionServer, "exit");
+  }
+});
 
 async function render(pathname = "/") {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request(`http://localhost${pathname}`, {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+  return fetch(`${productionOrigin}${pathname}`, {
+    headers: { accept: "text/html" },
+  });
 }
 
 test("server-renders the MySend create and join experience", async () => {
@@ -86,15 +136,23 @@ test("keeps Premium in maintenance behind authenticated settings", async () => {
 });
 
 test("keeps API contracts and metadata product-specific", async () => {
-  const [layout, api, packageJson] = await Promise.all([
+  const [layout, api, packageJson, viteConfig, dockerfile, railwayConfig] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/api.ts", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../vite.config.ts", import.meta.url), "utf8"),
+    readFile(new URL("../Dockerfile", import.meta.url), "utf8"),
+    readFile(new URL("../railway.toml", import.meta.url), "utf8"),
   ]);
 
   assert.match(layout, /MySend: Send what you need\./);
   assert.match(layout, /summary_large_image/);
   assert.match(api, /NEXT_PUBLIC_API_BASE_URL/);
   assert.match(api, /credentials:\s*"include"/);
+  assert.match(packageJson, /node dist\/standalone\/server\.js/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.doesNotMatch(packageJson, /wrangler|cloudflare/i);
+  assert.doesNotMatch(viteConfig, /cloudflare|worker/i);
+  assert.match(dockerfile, /COPY --from=build \/app\/dist\/standalone/);
+  assert.match(railwayConfig, /healthcheckPath = "\/"/);
 });

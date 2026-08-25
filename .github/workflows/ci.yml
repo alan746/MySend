@@ -46,6 +46,22 @@ jobs:
       - name: Run API tests
         run: mvn --batch-mode --no-transfer-progress verify
 
+  web-container:
+    name: Web container
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Build production image
+        run: >-
+          docker build
+          --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.mysend.app
+          --build-arg NEXT_PUBLIC_SITE_URL=https://mysend.app
+          --build-arg NEXT_PUBLIC_BILLING_ENABLED=false
+          --tag mysend-web:ci
+          .
+
   api-container:
     name: API container
     runs-on: ubuntu-latest

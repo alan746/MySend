@@ -67,12 +67,12 @@ The current build covers the complete temporary-sharing flow:
 | Data | PostgreSQL, H2, Flyway | Production persistence, lightweight local profile, and schema migrations |
 | Storage | Local or mounted file storage | Expiring room uploads with per-plan quotas |
 | Integrations | SMTP, Stripe-ready billing adapter | Email verification and staged Premium subscriptions |
-| Delivery | Docker Compose, GitHub Actions | Reproducible local services and pull-request checks |
+| Delivery | Docker, Railway, GitHub Actions | Standalone web and API services, managed production data, and pull-request checks |
 
 ```mermaid
 flowchart LR
-    Browser["Browser"] --> Web["React + Vinext web"]
-    Web --> API["Spring Boot API"]
+    Browser["Browser"] --> Web["mysend.app · React + Vinext"]
+    Web --> API["api.mysend.app · Spring Boot"]
     API --> DB["PostgreSQL"]
     API --> Files["File storage"]
     API --> Mail["SMTP"]
@@ -104,6 +104,21 @@ docker compose up --build
 
 Open `http://localhost:3000`; the API health endpoint is
 `http://localhost:8080/actuator/health`.
+
+## Production layout
+
+The public release runs as two Railway services from the same repository:
+
+| Service | Repository root | Domain | Runtime |
+| --- | --- | --- | --- |
+| Web | `/` | `https://mysend.app` | Standalone Node.js image built by the root `Dockerfile` |
+| API | `/backend` | `https://api.mysend.app` | Java 21 image built by `backend/Dockerfile` |
+
+Railway PostgreSQL stores application records, and a volume mounted at
+`/app/uploads` keeps room files across API deployments. Resend delivers
+registration codes from the verified `mysend.app` domain. Premium checkout is
+disabled for the first release while the rest of the sharing flow remains
+available.
 
 ## Project documents
 
