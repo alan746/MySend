@@ -1,34 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Account, api, Room } from "../lib/api";
 import { SiteHeader } from "./SiteHeader";
-
-type AuthMode = "login" | "register";
-type RegisterStep = "details" | "code";
-
-type VerificationResult = {
-  expiresAt: string;
-  delivered: boolean;
-  developmentCode?: string | null;
-};
 
 const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
 export function SettingsExperience() {
   const [account, setAccount] = useState<Account | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [step, setStep] = useState<RegisterStep>("details");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [developmentCode, setDevelopmentCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     api<Account>("/api/auth/me")
@@ -43,79 +27,13 @@ export function SettingsExperience() {
       .finally(() => setChecking(false));
   }, []);
 
-  async function submitLogin(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const current = await api<Account>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      setAccount(current);
-      setPassword("");
-      setNotice("Signed in. Your membership limits now apply to new rooms.");
-      setRooms(await api<Room[]>("/api/rooms"));
-    } catch (caught) {
-      setError(messageOf(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function requestCode(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const result = await api<VerificationResult>("/api/auth/register/code", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      setDevelopmentCode(result.developmentCode || "");
-      setStep("code");
-      setNotice(
-        result.delivered
-          ? "Check your email. The code expires in 10 minutes."
-          : "Development delivery is active; use the code shown below.",
-      );
-    } catch (caught) {
-      setError(messageOf(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const current = await api<Account>("/api/auth/register/verify", {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-      });
-      setAccount(current);
-      setPassword("");
-      setCode("");
-      setDevelopmentCode("");
-      setNotice("Your free account is ready.");
-    } catch (caught) {
-      setError(messageOf(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function logout() {
     setBusy(true);
     setError("");
     try {
       await api<void>("/api/auth/logout", { method: "POST" });
       setAccount(null);
-      setNotice("Signed out.");
-      setMode("login");
-      setStep("details");
+      setRooms([]);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -151,24 +69,53 @@ export function SettingsExperience() {
     }
   }
 
+  if (checking) {
+    return (
+      <main className="settings-page">
+        <SiteHeader compact />
+        <section className="settings-loading" role="status">
+          <span>Account settings</span>
+          <p>Checking your account...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!account) {
+    return (
+      <main className="settings-page">
+        <SiteHeader compact />
+        <section className="settings-gate" aria-labelledby="settings-gate-title">
+          <div>
+            <p className="section-kicker">Account settings</p>
+            <h1 id="settings-gate-title">Log in to continue.</h1>
+            <p>
+              Settings keeps your active rooms and account limits together.
+              Guest sharing stays available without an account.
+            </p>
+          </div>
+          <div className="settings-gate-actions">
+            <Link className="settings-gate-primary" href="/login">Log in</Link>
+            <Link href="/signup">Create an account</Link>
+            <Link href="/">Continue as guest</Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="settings-page">
       <SiteHeader compact />
       <section className="settings-heading">
-        <p className="section-kicker">Settings</p>
-        <h1>Your rooms,<br /><em>your limits.</em></h1>
+        <p className="section-kicker">Account settings</p>
+        <h1>Rooms and limits.</h1>
         <p>
-          An account keeps your plan and active rooms together. Rooms still
-          disappear on schedule.
+          Your plan, active ShareRooms, and account controls in one place.
+          Shared content still disappears on schedule.
         </p>
       </section>
 
-      {notice && (
-        <div className="settings-notice">
-          <span>{notice}</span>
-          <button type="button" onClick={() => setNotice("")}>×</button>
-        </div>
-      )}
       {error && (
         <div className="room-alert" role="alert">
           <span>{error}</span>
@@ -178,106 +125,11 @@ export function SettingsExperience() {
 
       <section className="settings-grid">
         <article className="account-card">
-          {checking ? (
-            <div className="account-checking" role="status">Checking your account…</div>
-          ) : account ? (
-            <AccountSummary
-              account={account}
-              busy={busy}
-              onLogout={() => void logout()}
-            />
-          ) : (
-            <>
-              <div className="auth-tabs" role="tablist" aria-label="Account action">
-                <button
-                  role="tab"
-                  aria-selected={mode === "login"}
-                  className={mode === "login" ? "active" : ""}
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                  }}
-                >
-                  Sign in
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={mode === "register"}
-                  className={mode === "register" ? "active" : ""}
-                  onClick={() => {
-                    setMode("register");
-                    setStep("details");
-                    setError("");
-                  }}
-                >
-                  Create account
-                </button>
-              </div>
-
-              {mode === "login" ? (
-                <form className="auth-form" onSubmit={submitLogin}>
-                  <div className="account-intro">
-                    <span>Welcome back</span>
-                    <h2>Pick up where you left off.</h2>
-                  </div>
-                  <EmailField value={email} onChange={setEmail} />
-                  <PasswordField value={password} onChange={setPassword} login />
-                  <button className="primary-action" disabled={busy}>
-                    {busy ? "Signing in…" : "Sign in"} <span>→</span>
-                  </button>
-                </form>
-              ) : step === "details" ? (
-                <form className="auth-form" onSubmit={requestCode}>
-                  <div className="account-intro">
-                    <span>Start free</span>
-                    <h2>One email. One account.</h2>
-                    <p>We verify your email once when you register.</p>
-                  </div>
-                  <EmailField value={email} onChange={setEmail} />
-                  <PasswordField value={password} onChange={setPassword} />
-                  <button className="primary-action" disabled={busy}>
-                    {busy ? "Sending code…" : "Send verification code"} <span>→</span>
-                  </button>
-                </form>
-              ) : (
-                <form className="auth-form verify-form" onSubmit={verifyCode}>
-                  <button
-                    className="back-link"
-                    type="button"
-                    onClick={() => setStep("details")}
-                  >
-                    ← Change email
-                  </button>
-                  <div className="account-intro">
-                    <span>Check your inbox</span>
-                    <h2>Enter the six-digit code.</h2>
-                    <p>Sent to {email}. It expires after 10 minutes.</p>
-                  </div>
-                  {developmentCode && (
-                    <div className="development-code">
-                      Local development code: <strong>{developmentCode}</strong>
-                    </div>
-                  )}
-                  <label className="code-field verification-code">
-                    <span>Verification code</span>
-                    <input
-                      value={code}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      placeholder="000000"
-                      onChange={(event) =>
-                        setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                    />
-                  </label>
-                  <button className="primary-action" disabled={busy || code.length !== 6}>
-                    {busy ? "Verifying…" : "Create free account"} <span>→</span>
-                  </button>
-                </form>
-              )}
-            </>
-          )}
+          <AccountSummary
+            account={account}
+            busy={busy}
+            onLogout={() => void logout()}
+          />
         </article>
 
         <article className="membership-card">
@@ -285,7 +137,7 @@ export function SettingsExperience() {
             <span className="premium-tag">Premium</span>
             <div><strong>$9.99</strong><small>CAD / month</small></div>
           </div>
-          <h2>More room for the work,<br />not permanent clutter.</h2>
+          <h2>More room for the work, not permanent clutter.</h2>
           <div className="membership-comparison">
             <div><span>Active rooms</span><b>2</b><strong>5</strong></div>
             <div><span>Room lifetime</span><b>60m</b><strong>3h</strong></div>
@@ -302,7 +154,7 @@ export function SettingsExperience() {
               <strong>Premium is being updated.</strong>
               <p>Checkout and billing management will reopen soon.</p>
             </div>
-          ) : account?.plan === "PREMIUM" ? (
+          ) : account.plan === "PREMIUM" ? (
             <>
               <div className="current-plan">Premium is active on this account.</div>
               <button
@@ -319,12 +171,12 @@ export function SettingsExperience() {
               <button
                 className="premium-action"
                 type="button"
-                disabled={busy || !account}
+                disabled={busy}
                 onClick={() => void upgrade()}
               >
                 Upgrade to Premium <span>↗</span>
               </button>
-              {account?.billingProfileAvailable && (
+              {account.billingProfileAvailable && (
                 <button
                   className="membership-manage"
                   type="button"
@@ -336,9 +188,6 @@ export function SettingsExperience() {
               )}
             </>
           )}
-          {billingEnabled && !account && (
-            <p className="membership-note">Create or sign in to upgrade.</p>
-          )}
         </article>
       </section>
 
@@ -349,12 +198,8 @@ export function SettingsExperience() {
         </div>
         {rooms.length === 0 ? (
           <div className="rooms-empty">
-            <p>
-              {account
-                ? "No active rooms on this account."
-                : "My ShareRooms is available after free registration. Guest rooms still work without login."}
-            </p>
-            <Link href="/">{account ? "Create a ShareRoom" : "Continue as guest"}</Link>
+            <p>No active rooms on this account.</p>
+            <Link href="/">Create a ShareRoom</Link>
           </div>
         ) : (
           <div className="rooms-list">
@@ -403,55 +248,6 @@ function AccountSummary({
         Sign out
       </button>
     </div>
-  );
-}
-
-function EmailField({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="text-field">
-      <span>Email</span>
-      <input
-        type="email"
-        value={value}
-        required
-        maxLength={320}
-        autoComplete="email"
-        placeholder="you@example.com"
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
-}
-
-function PasswordField({
-  value,
-  onChange,
-  login = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  login?: boolean;
-}) {
-  return (
-    <label className="text-field">
-      <span>Password {login ? null : <small>10+ characters</small>}</span>
-      <input
-        type="password"
-        value={value}
-        required
-        minLength={login ? undefined : 10}
-        maxLength={100}
-        autoComplete={login ? "current-password" : "new-password"}
-        placeholder={login ? "Your password" : "Choose a strong password"}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
   );
 }
 
