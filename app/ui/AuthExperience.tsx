@@ -148,6 +148,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
               <form className="auth-focused-form" onSubmit={submitLogin}>
                 <EmailField value={email} onChange={setEmail} />
                 <PasswordField value={password} onChange={setPassword} login />
+                <Link className="auth-forgot" href="/forgot-password">Forgot password?</Link>
                 <button className="auth-submit" disabled={busy}>
                   {busy ? "Logging in..." : "Log in"}
                 </button>
