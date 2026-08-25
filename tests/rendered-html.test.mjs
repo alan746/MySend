@@ -98,19 +98,22 @@ test("server-renders a room-specific loading state", async () => {
   assert.match(html, /role="status"/);
 });
 
-test("server-renders focused login, signup, and guarded settings routes", async () => {
-  const [loginResponse, signupResponse, settingsResponse] = await Promise.all([
+test("server-renders authentication, dashboard, and account settings routes", async () => {
+  const [loginResponse, signupResponse, dashboardResponse, settingsResponse] = await Promise.all([
     render("/login"),
     render("/signup"),
+    render("/dashboard"),
     render("/settings"),
   ]);
   assert.equal(loginResponse.status, 200);
   assert.equal(signupResponse.status, 200);
+  assert.equal(dashboardResponse.status, 200);
   assert.equal(settingsResponse.status, 200);
 
-  const [login, signup, settings] = await Promise.all([
+  const [login, signup, dashboard, settings] = await Promise.all([
     loginResponse.text(),
     signupResponse.text(),
+    dashboardResponse.text(),
     settingsResponse.text(),
   ]);
 
@@ -120,7 +123,8 @@ test("server-renders focused login, signup, and guarded settings routes", async 
   assert.match(signup, /Keep the rooms you create/);
   assert.match(signup, /Create your account/);
   assert.match(signup, /Send verification code/);
-  assert.match(settings, /Checking your account/);
+  assert.match(dashboard, /Opening your dashboard/);
+  assert.match(settings, /Opening account settings/);
   assert.doesNotMatch(settings, /Choose a strong password/);
 });
 
@@ -132,20 +136,26 @@ test("keeps Premium in maintenance behind authenticated settings", async () => {
 
   assert.match(settingsSource, /Premium is being updated/);
   assert.match(settingsSource, /if \(!account\)/);
-  assert.doesNotMatch(settingsSource, /submitLogin|requestCode|verifyCode/);
+  assert.doesNotMatch(settingsSource, /api<Room|\/api\/rooms/);
 });
 
-test("uses one full-page redirect after authentication succeeds", async () => {
-  const authSource = await readFile(
-    new URL("../app/ui/AuthExperience.tsx", import.meta.url),
-    "utf8",
-  );
+test("opens the dashboard after authentication and exposes account navigation", async () => {
+  const [authSource, headerSource, dashboardSource] = await Promise.all([
+    readFile(new URL("../app/ui/AuthExperience.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui/SiteHeader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui/DashboardExperience.tsx", import.meta.url), "utf8"),
+  ]);
 
   assert.equal(
-    authSource.match(/window\.location\.replace\("\/settings"\)/g)?.length,
+    authSource.match(/window\.location\.replace\("\/dashboard"\)/g)?.length,
     2,
   );
   assert.doesNotMatch(authSource, /router\.refresh\(\)/);
+  assert.match(headerSource, /Dashboard/);
+  assert.match(headerSource, /Settings/);
+  assert.match(headerSource, /Log out/);
+  assert.match(dashboardSource, /Create a ShareRoom/);
+  assert.match(dashboardSource, /Join a ShareRoom/);
 });
 
 test("keeps API contracts and metadata product-specific", async () => {

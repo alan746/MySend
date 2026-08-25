@@ -2,44 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Account, api, Room } from "../lib/api";
+import { Account, api } from "../lib/api";
 import { SiteHeader } from "./SiteHeader";
 
 const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
 export function SettingsExperience() {
   const [account, setAccount] = useState<Account | null>(null);
-  const [rooms, setRooms] = useState<Room[]>([]);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     api<Account>("/api/auth/me")
-      .then(async (current) => {
-        setAccount(current);
-        setRooms(await api<Room[]>("/api/rooms"));
-      })
-      .catch(() => {
-        setAccount(null);
-        setRooms([]);
-      })
+      .then(setAccount)
+      .catch(() => setAccount(null))
       .finally(() => setChecking(false));
   }, []);
-
-  async function logout() {
-    setBusy(true);
-    setError("");
-    try {
-      await api<void>("/api/auth/logout", { method: "POST" });
-      setAccount(null);
-      setRooms([]);
-    } catch (caught) {
-      setError(messageOf(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function upgrade() {
     setBusy(true);
@@ -73,9 +52,9 @@ export function SettingsExperience() {
     return (
       <main className="settings-page">
         <SiteHeader compact />
-        <section className="settings-loading" role="status">
-          <span>Account settings</span>
-          <p>Checking your account...</p>
+        <section className="product-loading" role="status">
+          <strong>Opening account settings</strong>
+          <span>Checking your membership and security details.</span>
         </section>
       </main>
     );
@@ -85,18 +64,12 @@ export function SettingsExperience() {
     return (
       <main className="settings-page">
         <SiteHeader compact />
-        <section className="settings-gate" aria-labelledby="settings-gate-title">
+        <section className="product-gate">
+          <p className="section-kicker">Account settings</p>
+          <h1>Log in to manage your account.</h1>
+          <p>Email, membership, and security controls belong to the account that created them.</p>
           <div>
-            <p className="section-kicker">Account settings</p>
-            <h1 id="settings-gate-title">Log in to continue.</h1>
-            <p>
-              Settings keeps your active rooms and account limits together.
-              Guest sharing stays available without an account.
-            </p>
-          </div>
-          <div className="settings-gate-actions">
-            <Link className="settings-gate-primary" href="/login">Log in</Link>
-            <Link href="/signup">Create an account</Link>
+            <Link className="solid-link" href="/login">Log in</Link>
             <Link href="/">Continue as guest</Link>
           </div>
         </section>
@@ -105,154 +78,93 @@ export function SettingsExperience() {
   }
 
   return (
-    <main className="settings-page">
+    <main className="settings-page settings-page--account">
       <SiteHeader compact />
-      <section className="settings-heading">
+      <section className="account-settings-heading">
         <p className="section-kicker">Account settings</p>
-        <h1>Rooms and limits.</h1>
-        <p>
-          Your plan, active ShareRooms, and account controls in one place.
-          Shared content still disappears on schedule.
-        </p>
+        <h1>Your account, clearly.</h1>
+        <p>Email, membership, and security. Room activity now lives in Dashboard.</p>
       </section>
 
       {error && (
-        <div className="room-alert" role="alert">
+        <div className="product-alert" role="alert">
           <span>{error}</span>
           <button type="button" onClick={() => setError("")}>Dismiss</button>
         </div>
       )}
 
-      <section className="settings-grid">
-        <article className="account-card">
-          <AccountSummary
-            account={account}
-            busy={busy}
-            onLogout={() => void logout()}
-          />
+      <section className="account-settings-grid">
+        <article className="settings-panel settings-panel--identity">
+          <header>
+            <span className="settings-panel-index">01</span>
+            <div>
+              <p className="section-kicker">Profile</p>
+              <h2>Account details</h2>
+            </div>
+          </header>
+          <dl className="account-detail-list">
+            <div>
+              <dt>Email</dt>
+              <dd>{account.email}</dd>
+            </div>
+            <div>
+              <dt>Membership status</dt>
+              <dd>{account.plan === "PREMIUM" ? "Premium" : "Free"}</dd>
+            </div>
+          </dl>
+          <Link className="panel-link" href="/dashboard">Open Dashboard <span>→</span></Link>
         </article>
 
-        <article className="membership-card">
-          <div className="membership-top">
-            <span className="premium-tag">Premium</span>
-            <div><strong>$9.99</strong><small>CAD / month</small></div>
-          </div>
-          <h2>More room for the work, not permanent clutter.</h2>
-          <div className="membership-comparison">
-            <div><span>Active rooms</span><b>2</b><strong>5</strong></div>
-            <div><span>Room lifetime</span><b>60m</b><strong>3h</strong></div>
-            <div><span>Clipboard</span><b>10k</b><strong>100k</strong></div>
-            <div><span>Room files</span><b>1 GB</b><strong>5 GB</strong></div>
-          </div>
-          <div className="comparison-key">
-            <span><i className="free-dot" /> Free</span>
-            <span><i className="premium-dot" /> Premium</span>
-          </div>
+        <article className="settings-panel settings-panel--security" id="security">
+          <header>
+            <span className="settings-panel-index">02</span>
+            <div>
+              <p className="section-kicker">Security</p>
+              <h2>Password</h2>
+            </div>
+          </header>
+          <p>
+            Password changes require a six-digit code sent to your account email.
+          </p>
+          <button className="panel-button" type="button" disabled>
+            Change password
+            <span>Security setup in progress</span>
+          </button>
+        </article>
+
+        <article className="settings-panel settings-panel--membership">
+          <header>
+            <span className="settings-panel-index">03</span>
+            <div>
+              <p className="section-kicker">Membership</p>
+              <h2>{account.plan === "PREMIUM" ? "Premium plan" : "Free plan"}</h2>
+            </div>
+          </header>
+          <dl className="membership-limits">
+            <div><dt>Active rooms</dt><dd>{account.activeRoomLimit}</dd></div>
+            <div><dt>Room lifetime</dt><dd>{account.roomMinutes} min</dd></div>
+            <div><dt>Clipboard</dt><dd>{account.clipboardCharacters.toLocaleString()}</dd></div>
+            <div><dt>Room files</dt><dd>{formatBytes(account.roomFileBytes)}</dd></div>
+          </dl>
+
           {!billingEnabled ? (
-            <div className="premium-maintenance" role="status">
-              <span>Plan update</span>
+            <div className="membership-update" role="status">
               <strong>Premium is being updated.</strong>
               <p>Checkout and billing management will reopen soon.</p>
             </div>
           ) : account.plan === "PREMIUM" ? (
-            <>
-              <div className="current-plan">Premium is active on this account.</div>
-              <button
-                className="premium-action"
-                type="button"
-                disabled={busy}
-                onClick={() => void manageBilling()}
-              >
-                Manage billing <span>↗</span>
-              </button>
-            </>
+            <button className="panel-button" type="button" disabled={busy} onClick={() => void manageBilling()}>
+              Manage billing <span>→</span>
+            </button>
           ) : (
-            <>
-              <button
-                className="premium-action"
-                type="button"
-                disabled={busy}
-                onClick={() => void upgrade()}
-              >
-                Upgrade to Premium <span>↗</span>
-              </button>
-              {account.billingProfileAvailable && (
-                <button
-                  className="membership-manage"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void manageBilling()}
-                >
-                  View previous billing
-                </button>
-              )}
-            </>
+            <button className="panel-button" type="button" disabled={busy} onClick={() => void upgrade()}>
+              Upgrade to Premium <span>→</span>
+            </button>
           )}
         </article>
       </section>
-
-      <section className="active-rooms" aria-labelledby="active-rooms-title">
-        <div>
-          <span className="section-kicker">My ShareRooms</span>
-          <h2 id="active-rooms-title">Active now</h2>
-        </div>
-        {rooms.length === 0 ? (
-          <div className="rooms-empty">
-            <p>No active rooms on this account.</p>
-            <Link href="/">Create a ShareRoom</Link>
-          </div>
-        ) : (
-          <div className="rooms-list">
-            {rooms.map((room) => (
-              <Link href={`/room/${room.accessCode}`} key={room.id}>
-                <span>{room.accessCode}</span>
-                <div>
-                  <strong>{room.visibility.toLowerCase()} room</strong>
-                  <small>{room.remainingEntries} entries left</small>
-                </div>
-                <time>{minutesLeft(room.expiresAt)}m left</time>
-                <b>→</b>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
     </main>
   );
-}
-
-function AccountSummary({
-  account,
-  busy,
-  onLogout,
-}: {
-  account: Account;
-  busy: boolean;
-  onLogout: () => void;
-}) {
-  return (
-    <div className="account-summary">
-      <div className="account-avatar">{account.email.slice(0, 1).toUpperCase()}</div>
-      <span className="section-kicker">Signed in</span>
-      <h2>{account.email}</h2>
-      <span className={`plan-pill ${account.plan === "PREMIUM" ? "is-premium" : ""}`}>
-        {account.plan.toLowerCase()} membership
-      </span>
-      <dl>
-        <div><dt>Active rooms</dt><dd>{account.activeRoomLimit}</dd></div>
-        <div><dt>Maximum time</dt><dd>{account.roomMinutes} min</dd></div>
-        <div><dt>Clipboard</dt><dd>{account.clipboardCharacters.toLocaleString()}</dd></div>
-        <div><dt>File storage</dt><dd>{formatBytes(account.roomFileBytes)}</dd></div>
-      </dl>
-      <button className="quiet-button" type="button" disabled={busy} onClick={onLogout}>
-        Sign out
-      </button>
-    </div>
-  );
-}
-
-function minutesLeft(value: string) {
-  return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 60_000));
 }
 
 function formatBytes(bytes: number) {
