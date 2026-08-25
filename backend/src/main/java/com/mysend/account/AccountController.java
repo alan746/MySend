@@ -55,6 +55,47 @@ public class AccountController {
         return authenticated(accounts.login(request.email(), request.password()));
     }
 
+    @PostMapping("/password/code")
+    AccountService.PasswordCodeResult requestPasswordCode(
+            @Valid @RequestBody PasswordCodeRequest request
+    ) {
+        return accounts.requestPasswordReset(request.email());
+    }
+
+    @PostMapping("/password/reset")
+    ResponseEntity<AccountView> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request
+    ) {
+        return authenticated(accounts.resetPassword(
+                request.email(),
+                request.code(),
+                request.newPassword()
+        ));
+    }
+
+    @PostMapping("/password/change/code")
+    ResponseEntity<AccountService.PasswordCodeResult> requestPasswordChangeCode(
+            HttpServletRequest request
+    ) {
+        return sessions.current(request)
+                .map(account -> ResponseEntity.ok(accounts.requestPasswordChange(account)))
+                .orElseGet(() -> ResponseEntity.status(401).build());
+    }
+
+    @PostMapping("/password/change")
+    ResponseEntity<AccountView> changePassword(
+            HttpServletRequest request,
+            @Valid @RequestBody PasswordChangeRequest change
+    ) {
+        return sessions.current(request)
+                .map(account -> authenticated(accounts.changePassword(
+                        account,
+                        change.code(),
+                        change.newPassword()
+                )))
+                .orElseGet(() -> ResponseEntity.status(401).build());
+    }
+
     @GetMapping("/me")
     ResponseEntity<AccountView> current(HttpServletRequest request) {
         return sessions.current(request)
@@ -109,6 +150,24 @@ public class AccountController {
     record LoginRequest(
             @NotBlank @Email @Size(max = 320) String email,
             @NotBlank @Size(max = 100) String password
+    ) {
+    }
+
+    record PasswordCodeRequest(
+            @NotBlank @Email @Size(max = 320) String email
+    ) {
+    }
+
+    record PasswordResetRequest(
+            @NotBlank @Email @Size(max = 320) String email,
+            @Pattern(regexp = "\\d{6}") String code,
+            @NotBlank @Size(min = 10, max = 100) String newPassword
+    ) {
+    }
+
+    record PasswordChangeRequest(
+            @Pattern(regexp = "\\d{6}") String code,
+            @NotBlank @Size(min = 10, max = 100) String newPassword
     ) {
     }
 

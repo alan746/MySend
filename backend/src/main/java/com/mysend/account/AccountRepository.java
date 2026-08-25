@@ -60,6 +60,19 @@ public class AccountRepository {
                 .update();
     }
 
+    public void updatePassword(String accountId, String passwordHash, Instant updatedAt) {
+        jdbc.sql("""
+                        update accounts
+                        set password_hash = :passwordHash,
+                            updated_at_ms = :updatedAt
+                        where id = :accountId
+                        """)
+                .param("passwordHash", passwordHash)
+                .param("updatedAt", updatedAt.toEpochMilli())
+                .param("accountId", accountId)
+                .update();
+    }
+
     public void activatePremium(
             String accountId,
             String customerId,
