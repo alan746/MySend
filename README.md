@@ -36,6 +36,16 @@ Guest creation and joining never require an account. Registration is optional
 and adds a signed-in Dashboard, higher limits, account settings, and a list of
 the member's active ShareRooms.
 
+## Product surfaces
+
+| Surface | Live route | Purpose | Login required |
+| --- | --- | --- | --- |
+| Home | [mysend.app](https://mysend.app) | Guest creation, code entry, product explanation, and plan comparison | No |
+| Dashboard | [mysend.app/dashboard](https://mysend.app/dashboard) | Member create/join actions, active rooms, and current plan limits | Yes |
+| ShareRoom | `mysend.app/room/{code}` | Clipboard, file board, room status, and owner controls | Successful room entry |
+| Account Settings | [mysend.app/settings](https://mysend.app/settings) | Email, membership, limits, active rooms, and password change | Yes |
+| Password recovery | [mysend.app/forgot-password](https://mysend.app/forgot-password) | Request and redeem a single-use password code | No |
+
 ## What is available now
 
 ### Guest sharing
@@ -70,9 +80,9 @@ the member's active ShareRooms.
   immediate closure;
 - secure room-scoped authorization that ends when the room closes.
 
-| ShareRoom workspace | Account entry |
-| --- | --- |
-| ![MySend clipboard, file board, access code, and countdown](docs/images/shareroom.png) | ![MySend account page and plan presentation](docs/images/settings.png) |
+<p align="center">
+  <img src="docs/images/shareroom.png" alt="MySend clipboard, file board, access code, and countdown" width="100%">
+</p>
 
 > **Premium status:** the Premium plan and its limits are presented in the
 > product, but checkout and subscription management are temporarily disabled
@@ -116,9 +126,9 @@ cleanup removes them.
 
 | Layer | Technology | Responsibility |
 | --- | --- | --- |
-| Web | React 19, Next.js 16 types, Vinext, Vite, TypeScript, Tailwind CSS, Manrope | Server-rendered routes, responsive product UI, and typed API requests |
+| Web | React 19, Vinext (Next.js-compatible App Router), Vite, TypeScript, Tailwind CSS, Manrope | Server-rendered routes, responsive product UI, and typed API requests |
 | API | Java 21, Spring Boot 3.5, Maven | Room, clipboard, file, account, security, email, and billing use cases |
-| Data | PostgreSQL 17, H2, Flyway | Production persistence, local development, and ordered schema migrations |
+| Data | PostgreSQL, H2, Flyway | Production persistence, local development, and ordered schema migrations |
 | Storage | Local filesystem or mounted Railway volume | Temporary room files with plan quotas and expiry cleanup |
 | Email | Resend HTTPS API | Registration, password reset, and password change codes |
 | Security | Spring Security, BCrypt, HttpOnly cookies, origin checks, rate limits | Account sessions and room-scoped authorization |
