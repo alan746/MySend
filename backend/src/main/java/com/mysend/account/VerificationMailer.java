@@ -3,19 +3,24 @@ package com.mysend.account;
 import com.mysend.common.ApiException;
 import com.mysend.config.AppProperties;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.util.List;
 
 @Service
 public class VerificationMailer {
 
-    private final JavaMailSender mailSender;
+    private final RestClient resendClient;
     private final AppProperties properties;
 
-    public VerificationMailer(JavaMailSender mailSender, AppProperties properties) {
-        this.mailSender = mailSender;
+    public VerificationMailer(
+            @Qualifier("resendRestClient") RestClient resendClient,
+            AppProperties properties
+    ) {
+        this.resendClient = resendClient;
         this.properties = properties;
     }
 
@@ -23,20 +28,24 @@ public class VerificationMailer {
         if (!properties.mailDeliveryEnabled()) {
             return false;
         }
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(properties.mailFrom());
-        message.setTo(email);
-        message.setSubject("Your MySend verification code");
-        message.setText("""
-                Your MySend verification code is %s.
-
-                It expires in 10 minutes. If you did not request this code,
-                you can ignore this message.
-                """.formatted(code));
         try {
-            mailSender.send(message);
+            resendClient.post()
+                    .uri("/emails")
+                    .body(new ResendEmailRequest(
+                            properties.mailFrom(),
+                            List.of(email),
+                            "Your MySend verification code",
+                            """
+                                    Your MySend verification code is %s.
+
+                                    It expires in 10 minutes. If you did not request this code,
+                                    you can ignore this message.
+                                    """.formatted(code)
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
             return true;
-        } catch (MailException exception) {
+        } catch (RestClientException exception) {
             throw new ApiException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "MAIL_UNAVAILABLE",
@@ -47,5 +56,13 @@ public class VerificationMailer {
 
     public boolean canExposeDevelopmentCode() {
         return !properties.mailDeliveryEnabled() && properties.developmentCodeEnabled();
+    }
+
+    record ResendEmailRequest(
+            String from,
+            List<String> to,
+            String subject,
+            String text
+    ) {
     }
 }

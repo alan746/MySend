@@ -5,6 +5,7 @@ import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +26,7 @@ class ProductionConfigurationValidatorTest {
                 false,
                 true,
                 true,
+                resend("re_live_value", "https://api.resend.com"),
                 new AppProperties.Stripe("sk_live_value", "whsec_value", "price_value")
         );
         MockEnvironment environment = new MockEnvironment()
@@ -48,6 +50,7 @@ class ProductionConfigurationValidatorTest {
                 false,
                 true,
                 false,
+                resend("re_live_value", "https://api.resend.com"),
                 new AppProperties.Stripe("", "", "")
         );
         MockEnvironment environment = new MockEnvironment()
@@ -71,6 +74,7 @@ class ProductionConfigurationValidatorTest {
                 true,
                 false,
                 true,
+                resend("", "http://api.resend.com"),
                 new AppProperties.Stripe("", "", "")
         );
         MockEnvironment environment = new MockEnvironment()
@@ -91,6 +95,8 @@ class ProductionConfigurationValidatorTest {
                                 "MAIL_DELIVERY_ENABLED must be true",
                                 "DEVELOPMENT_CODE_ENABLED must be false",
                                 "MAIL_FROM must use a verified sender",
+                                "RESEND_API_KEY is required",
+                                "RESEND_API_BASE_URL must use HTTPS",
                                 "STRIPE_SECRET_KEY is required",
                                 "STRIPE_WEBHOOK_SECRET is required",
                                 "STRIPE_PREMIUM_PRICE_ID is required"
@@ -107,6 +113,7 @@ class ProductionConfigurationValidatorTest {
             boolean developmentCodeEnabled,
             boolean storagePersistent,
             boolean billingEnabled,
+            AppProperties.Resend resend,
             AppProperties.Stripe stripe
     ) {
         return new AppProperties(
@@ -119,7 +126,17 @@ class ProductionConfigurationValidatorTest {
                 developmentCodeEnabled,
                 storagePersistent,
                 billingEnabled,
+                resend,
                 stripe
+        );
+    }
+
+    private AppProperties.Resend resend(String apiKey, String baseUrl) {
+        return new AppProperties.Resend(
+                apiKey,
+                baseUrl,
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(10)
         );
     }
 }

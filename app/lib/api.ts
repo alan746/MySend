@@ -44,6 +44,7 @@ export type Account = {
 
 const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 export const API_BASE = configuredBase ?? "";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export async function api<T>(
   path: string,
@@ -56,13 +57,18 @@ export async function api<T>(
   headers.set("X-Requested-With", "MySendWeb");
 
   let response: Response;
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...init,
       credentials: "include",
       headers,
+      signal: init.signal ? AbortSignal.any([init.signal, timeout]) : timeout,
     });
-  } catch {
+  } catch (caught) {
+    if (caught instanceof DOMException && caught.name === "TimeoutError") {
+      throw new Error("The request timed out. Please try again.");
+    }
     throw new Error(
       "The MySend service is not connected yet. Check the API address and try again.",
     );

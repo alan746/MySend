@@ -20,15 +20,6 @@ spring:
     password: ${DATABASE_PASSWORD:}
   flyway:
     enabled: true
-  mail:
-    host: ${SPRING_MAIL_HOST:localhost}
-    port: ${SPRING_MAIL_PORT:1025}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail.smtp.auth: ${SPRING_MAIL_AUTH:false}
-      mail.smtp.starttls.enable: ${SPRING_MAIL_STARTTLS:false}
-
 management:
   health:
     mail:
@@ -52,6 +43,11 @@ mysend:
   development-code-enabled: ${DEVELOPMENT_CODE_ENABLED:false}
   storage-persistent: ${STORAGE_PERSISTENT:false}
   billing-enabled: ${BILLING_ENABLED:false}
+  resend:
+    api-key: ${RESEND_API_KEY:}
+    base-url: ${RESEND_API_BASE_URL:https://api.resend.com}
+    connect-timeout: ${RESEND_CONNECT_TIMEOUT:5s}
+    read-timeout: ${RESEND_READ_TIMEOUT:10s}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

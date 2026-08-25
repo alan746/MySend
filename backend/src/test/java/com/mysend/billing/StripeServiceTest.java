@@ -20,6 +20,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -269,6 +270,12 @@ class StripeServiceTest {
                 false,
                 true,
                 billingEnabled,
+                new AppProperties.Resend(
+                        "re_test_value",
+                        "https://api.resend.com",
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(10)
+                ),
                 new AppProperties.Stripe(
                         "sk_test_value",
                         WEBHOOK_SECRET,

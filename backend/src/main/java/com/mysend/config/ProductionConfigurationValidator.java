@@ -72,6 +72,14 @@ public class ProductionConfigurationValidator implements ApplicationRunner {
                 || properties.mailFrom().contains("example.com")) {
             problems.add("MAIL_FROM must use a verified sender");
         }
+        if (properties.resend() == null || isBlank(properties.resend().apiKey())) {
+            problems.add("RESEND_API_KEY is required");
+        }
+        if (properties.resend() == null
+                || isBlank(properties.resend().baseUrl())
+                || !properties.resend().baseUrl().startsWith("https://")) {
+            problems.add("RESEND_API_BASE_URL must use HTTPS");
+        }
         if (properties.billingEnabled()) {
             validateStripe(problems);
         }
