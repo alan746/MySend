@@ -2,130 +2,245 @@
 
 **Send what you need. Keep nothing longer than necessary.**
 
-MySend is a short-lived workspace for handing off text and files. Create a
-ShareRoom without signing in, send one memorable five-character code, and let
-the room close itself when the timer ends.
+MySend is a live, short-lived sharing workspace for text and files. Open a
+ShareRoom without creating an account, send one memorable five-character
+code, and let the room disappear when its timer ends.
 
 <p align="center">
-  <img src="docs/images/home.png" alt="MySend home page with guest ShareRoom creation" width="100%">
+  <a href="https://mysend.app"><strong>Open MySend →</strong></a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="https://api.mysend.app/actuator/health">API health</a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="docs/design/01-requirements.md">Requirements</a>
 </p>
 
-## What it does
+<p align="center">
+  <a href="https://mysend.app">
+    <img src="docs/images/home.png" alt="MySend live home page with guest ShareRoom creation and joining" width="100%">
+  </a>
+</p>
 
-- **Create in seconds.** Choose a public or password-protected room, its
-  lifetime, and the number of successful entries allowed.
-- **Join with one code.** Every room gets four digits and one letter. Codes are
-  case-insensitive, so `4821K` and `4821k` open the same room.
-- **Share text and files together.** The clipboard and file board sit side by
-  side, with no folder setup or permanent storage to manage.
-- **See every limit.** The room shows its remaining time, privacy, entry count,
-  plan, character use, and file storage at a glance.
-- **Stay anonymous when you want.** Guest creation and joining require no
-  account. Free registration adds My ShareRooms; Premium raises every limit.
+## The product in one minute
 
-| ShareRoom workspace | Account and plans |
+1. **Create a room.** Choose public or private access, an optional password,
+   the lifetime, and how many successful visitor entries to allow.
+2. **Share one code.** MySend generates four digits followed by one letter,
+   such as `4821K`. Uppercase and lowercase open the same room.
+3. **Move text and files.** Everyone who successfully enters sees the same
+   clipboard and file board; the owner keeps the policy and close controls.
+4. **Leave no permanent workspace.** Closing, expiry, or exhausting the entry
+   allowance immediately makes the room unavailable, then cleanup removes its
+   retained content.
+
+Guest creation and joining never require an account. Registration is optional
+and adds a signed-in Dashboard, higher limits, account settings, and a list of
+the member's active ShareRooms.
+
+## What is available now
+
+### Guest sharing
+
+- create one ShareRoom without logging in;
+- choose public or password-protected entry;
+- join with a case-insensitive five-character code;
+- share clipboard text and common documents, source code, images, JSON, and
+  ZIP files;
+- see the code, countdown, privacy, entry usage, and storage usage in the room;
+- close the room immediately from the owner browser.
+
+### Accounts
+
+- register once per normalized email with a six-digit code that expires after
+  ten minutes;
+- receive branded security mail through the Resend HTTPS API;
+- sign in without repeating email verification;
+- recover a forgotten password with a single-use email code;
+- change the password from Account Settings after another email-code check;
+- use a signed-in Dashboard to create, join, and reopen active ShareRooms;
+- review email, membership status, plan limits, and active rooms in Settings.
+
+### Room workspace
+
+- one shared clipboard with optimistic version checks to prevent silent
+  overwrites;
+- upload, list, download, and owner-delete file operations;
+- per-plan clipboard, individual-file, total-file, lifetime, active-room, and
+  visitor-entry limits;
+- owner-only controls for privacy, password, entry allowance, close time, and
+  immediate closure;
+- secure room-scoped authorization that ends when the room closes.
+
+| ShareRoom workspace | Account entry |
 | --- | --- |
-| ![Clipboard, file board, room code and countdown](docs/images/shareroom.png) | ![Sign in, registration and Premium plan settings](docs/images/settings.png) |
+| ![MySend clipboard, file board, access code, and countdown](docs/images/shareroom.png) | ![MySend account page and plan presentation](docs/images/settings.png) |
 
-## Current capabilities
-
-The current build covers the complete temporary-sharing flow:
-
-- public and private ShareRooms with optional passwords;
-- case-insensitive access codes in a readable `0000A` format;
-- access-count enforcement after a successful room entry;
-- shared clipboard updates with plan-specific character limits;
-- upload, download, listing, and deletion for common documents, source code,
-  images, archives, and other files;
-- owner controls for password, privacy, entry limit, close time, and immediate
-  room closure;
-- email registration with a ten-minute verification code, sign-in sessions,
-  and an active My ShareRooms list;
-- Premium plan comparison, with checkout temporarily marked as updating for
-  the first deployment;
-- automatic expiry cleanup, API rate limits, secure room cookies, and
-  production configuration checks.
+> **Premium status:** the Premium plan and its limits are presented in the
+> product, but checkout and subscription management are temporarily disabled
+> while billing is being updated. Guest and Free sharing are live.
 
 ## Plans and limits
 
-| Capability | Guest | Free account | Premium |
+Limits are captured when a room is created, so changing an account plan later
+does not unexpectedly reshape an already-open room.
+
+| Capability | Guest | Free account | Premium* |
 | --- | ---: | ---: | ---: |
-| Monthly price | No login | $0 | $9.99 CAD |
+| Price | No login | CA$0 | CA$9.99/month |
 | Active rooms | 1 | 2 | 5 |
 | Maximum lifetime | 15 minutes | 60 minutes | 3 hours |
 | Clipboard per room | 2,000 characters | 10,000 characters | 100,000 characters |
-| Total files per room | 250 MB | 1 GB | 5 GB |
-| Single file | 50 MB | 250 MB | 1 GB |
-| Successful entries | 20 | 100 | 1,000 |
+| Total files per room | 256 MiB | 1 GiB | 5 GiB |
+| Maximum single file | 50 MiB | 250 MiB | 1 GiB |
+| Successful visitor entries | 20 | 100 | 1,000 |
 
-## Technology
+\* Premium purchasing is currently unavailable; the limits remain the defined
+product target for the billing release.
 
-| Layer | Technology | Role |
-| --- | --- | --- |
-| Web | React 19, TypeScript, Vinext, Vite, Tailwind CSS | Server-rendered routes, responsive interface, and typed API client |
-| API | Java 21, Spring Boot 3, Maven | Room, account, file, email, and billing services |
-| Data | PostgreSQL, H2, Flyway | Production persistence, lightweight local profile, and schema migrations |
-| Storage | Local or mounted file storage | Expiring room uploads with per-plan quotas |
-| Integrations | SMTP, Stripe-ready billing adapter | Email verification and staged Premium subscriptions |
-| Delivery | Docker, Railway, GitHub Actions | Standalone web and API services, managed production data, and pull-request checks |
+## How the system is built
 
 ```mermaid
 flowchart LR
-    Browser["Browser"] --> Web["mysend.app · React + Vinext"]
-    Web --> API["api.mysend.app · Spring Boot"]
-    API --> DB["PostgreSQL"]
-    API --> Files["File storage"]
-    API --> Mail["SMTP"]
-    API --> Stripe["Stripe"]
+    Browser["Browser"] --> Web["mysend.app<br>React + Vinext"]
+    Web --> API["api.mysend.app<br>Spring Boot"]
+    API --> DB["Railway PostgreSQL"]
+    API --> Files["Mounted room-file volume"]
+    API --> Mail["Resend HTTPS API"]
+    API -. billing disabled .-> Stripe["Stripe adapter"]
+```
+
+The web and API deploy independently from the same repository. The web never
+talks directly to the database, file volume, Resend, or Stripe. Spring Boot
+owns the room and account rules; PostgreSQL stores application state; the
+mounted volume keeps accepted room files through API restarts until lifecycle
+cleanup removes them.
+
+| Layer | Technology | Responsibility |
+| --- | --- | --- |
+| Web | React 19, Next.js 16 types, Vinext, Vite, TypeScript, Tailwind CSS, Manrope | Server-rendered routes, responsive product UI, and typed API requests |
+| API | Java 21, Spring Boot 3.5, Maven | Room, clipboard, file, account, security, email, and billing use cases |
+| Data | PostgreSQL 17, H2, Flyway | Production persistence, local development, and ordered schema migrations |
+| Storage | Local filesystem or mounted Railway volume | Temporary room files with plan quotas and expiry cleanup |
+| Email | Resend HTTPS API | Registration, password reset, and password change codes |
+| Security | Spring Security, BCrypt, HttpOnly cookies, origin checks, rate limits | Account sessions and room-scoped authorization |
+| Delivery | Docker, Railway, GitHub Actions | Independent production images, health checks, and pull-request verification |
+| Billing | Stripe adapter behind a disabled feature flag | Staged Premium checkout, portal, and webhook handling |
+
+## Repository map
+
+```text
+app/                               web routes, components, API client, styles
+backend/src/main/java/com/mysend/  Spring Boot product and adapter code
+backend/src/main/resources/        configuration and Flyway migrations
+backend/src/test/                  API, domain, security, and provider tests
+docs/design/                       ordered product and system design
+docs/images/                       README product screenshots
+tests/                             rendered web-output checks
+.github/workflows/                 CI for web, API, and both Docker images
+Dockerfile                         production web image
+backend/Dockerfile                 production API image
+compose.yaml                       local API, PostgreSQL, and persistent volumes
 ```
 
 ## Run locally
 
-The web client requires Node.js 22 or newer. The API requires Java 21, or it
-can run with PostgreSQL through Docker Desktop.
+### Requirements
+
+- Node.js 22.13 or newer;
+- Java 21 and Maven 3.9, or Docker Desktop;
+- Git.
+
+### 1. Start the API
+
+The simplest full local stack uses PostgreSQL and the same API Dockerfile used
+in production:
 
 ```bash
-npm ci
-npm run dev
+docker compose up --build --wait
 ```
 
-In another terminal:
+This starts PostgreSQL and the API at `http://localhost:8080`. Local mail
+delivery is disabled, so development verification codes are returned by the
+API instead of being sent to a real inbox.
+
+To run only the API with its default file-backed H2 database:
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-For the containerized API and PostgreSQL instead:
+### 2. Start the web application
+
+In another terminal, from the repository root:
 
 ```bash
-docker compose up --build
+npm ci
+npm run dev
 ```
 
-Open `http://localhost:3000`; the API health endpoint is
+Open `http://localhost:3000`. The local API health endpoint is
 `http://localhost:8080/actuator/health`.
 
-## Production layout
+### 3. Stop the container stack
 
-The public release runs as two Railway services from the same repository:
+```bash
+docker compose down
+```
 
-| Service | Repository root | Domain | Runtime |
+This keeps the named PostgreSQL and upload volumes. Use an explicit volume
+removal only when the local data is no longer needed.
+
+## Verification
+
+Run all web lint, type, build, and rendered-output checks:
+
+```bash
+npm run check
+```
+
+Run the complete Java test suite:
+
+```bash
+cd backend
+mvn --batch-mode --no-transfer-progress verify
+```
+
+Build the same production images checked by CI:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.mysend.app \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://mysend.app \
+  --build-arg NEXT_PUBLIC_BILLING_ENABLED=false \
+  --tag mysend-web .
+
+docker build --tag mysend-api backend
+```
+
+Every pull request runs web checks, Java tests, and independent Docker builds
+for both services before merge.
+
+## Production
+
+| Service | Railway root | Public address | Health check |
 | --- | --- | --- | --- |
-| Web | `/` | `https://mysend.app` | Standalone Node.js image built by the root `Dockerfile` |
-| API | `/backend` | `https://api.mysend.app` | Java 21 image built by `backend/Dockerfile` |
+| Web | `/` | [https://mysend.app](https://mysend.app) | `/` |
+| API | `/backend` | [https://api.mysend.app](https://api.mysend.app) | `/actuator/health` |
 
-Railway PostgreSQL stores application records, and a volume mounted at
-`/app/uploads` keeps room files across API deployments. Resend delivers
-registration codes from the verified `mysend.app` domain. Premium checkout is
-disabled for the first release while the rest of the sharing flow remains
-available.
+Production uses secure cookies, `https://mysend.app` as the allowed web origin,
+Railway PostgreSQL, a volume mounted at `/app/uploads`, and Resend with a
+verified sending domain. Both services deploy automatically from `main` after
+the repository checks pass.
 
-## Project documents
+## Project documentation
 
-- [Design process](docs/design/README.md) — principles, requirements, use
-  cases, domain model, Clean Architecture, sequences, interfaces, security,
-  and operations in their required design order.
-- [Development workflow](docs/development-workflow.md) — repository layout,
-  issue-to-release process, local checks, and production delivery.
-- [Roadmap](docs/roadmap.md) — launch work and the updates planned after the
-  first public release.
+- [Design process](docs/design/README.md) — the required order from product
+  problem through requirements, use cases, domain, architecture, interaction,
+  interfaces, security, and decisions.
+- [Development workflow](docs/development-workflow.md) — issue, branch,
+  commit, pull-request, test, deployment, and release conventions.
+- [Roadmap](docs/roadmap.md) — the work planned beyond the current public
+  release.
+
+For the complete FR, QR, invariant, plan-limit, and acceptance-test baseline,
+continue to the **[MySend requirements](docs/design/01-requirements.md)**.
