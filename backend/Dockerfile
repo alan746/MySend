@@ -22,7 +22,6 @@ COPY --from=build /workspace/target/mysend-api-0.1.0.jar /app/mysend-api.jar
 
 USER mysend
 EXPOSE 8080
-VOLUME ["/app/uploads"]
 
 ENV SERVER_PORT=8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/mysend-api.jar"]

@@ -194,6 +194,12 @@ deployment platform's secret manager, never in Git.
 Build the API with `backend/Dockerfile`, mount durable storage at the same path
 as `UPLOAD_DIRECTORY`, and send Stripe subscription events to:
 
+On Railway, set the service root directory to `/backend`. Add a Railway Volume
+to that service with `/app/uploads` as its mount path, then set
+`UPLOAD_DIRECTORY=/app/uploads` and `STORAGE_PERSISTENT=true`. The Dockerfile
+does not declare a Docker-managed volume because Railway owns the persistent
+mount lifecycle.
+
 ```text
 https://api.your-domain.com/api/billing/webhook
 ```
