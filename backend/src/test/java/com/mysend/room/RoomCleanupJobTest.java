@@ -3,6 +3,7 @@ package com.mysend.room;
 import com.mysend.account.AppSessionRepository;
 import com.mysend.account.AuthenticationAttemptRepository;
 import com.mysend.account.EmailVerificationRepository;
+import com.mysend.account.PasswordVerificationRepository;
 import com.mysend.file.FileStore;
 import com.mysend.file.RoomFile;
 import com.mysend.file.RoomFileRepository;
@@ -32,6 +33,7 @@ class RoomCleanupJobTest {
     private RoomAccessTokenRepository accessTokens;
     private AppSessionRepository sessions;
     private EmailVerificationRepository verifications;
+    private PasswordVerificationRepository passwordVerifications;
     private AuthenticationAttemptRepository authenticationAttempts;
     private RoomCleanupJob cleanupJob;
 
@@ -43,6 +45,7 @@ class RoomCleanupJobTest {
         accessTokens = mock(RoomAccessTokenRepository.class);
         sessions = mock(AppSessionRepository.class);
         verifications = mock(EmailVerificationRepository.class);
+        passwordVerifications = mock(PasswordVerificationRepository.class);
         authenticationAttempts = mock(AuthenticationAttemptRepository.class);
         cleanupJob = new RoomCleanupJob(
                 rooms,
@@ -51,6 +54,7 @@ class RoomCleanupJobTest {
                 accessTokens,
                 sessions,
                 verifications,
+                passwordVerifications,
                 authenticationAttempts,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
@@ -77,6 +81,7 @@ class RoomCleanupJobTest {
         verify(accessTokens).deleteExpired(NOW);
         verify(sessions).deleteExpired(NOW);
         verify(verifications).deleteExpired(NOW);
+        verify(passwordVerifications).deleteExpired(NOW);
         verify(authenticationAttempts).deleteOlderThan(NOW.minus(Duration.ofDays(1)));
         verify(fileStore).delete(file.storageKey());
         verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);

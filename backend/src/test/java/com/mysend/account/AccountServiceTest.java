@@ -30,4 +30,22 @@ class AccountServiceTest {
         assertThat(verification.canUseAt(now.plusSeconds(599))).isTrue();
         assertThat(verification.canUseAt(now.plusSeconds(600))).isFalse();
     }
+
+    @Test
+    void passwordVerificationIsSingleUseAndExpiresAtTenMinutes() {
+        Instant now = Instant.parse("2026-08-25T12:00:00Z");
+        PasswordVerification verification = new PasswordVerification(
+                "id",
+                "account-id",
+                "person@example.com",
+                PasswordVerificationPurpose.RESET,
+                "hash",
+                now.plusSeconds(600),
+                null,
+                now
+        );
+
+        assertThat(verification.canUseAt(now.plusSeconds(599))).isTrue();
+        assertThat(verification.canUseAt(now.plusSeconds(600))).isFalse();
+    }
 }
