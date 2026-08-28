@@ -66,7 +66,9 @@ the room disappear when its timer ends.
 
 Guest creation and joining never require an account. Registration is optional
 and adds a signed-in Dashboard, higher limits, account settings, and a list of
-the member's active ShareRooms.
+the member's active ShareRooms. Registering or signing in on the same proven
+device atomically moves its still-open Guest rooms into that account without
+changing their original plan limits or expiry.
 
 ## Product surfaces
 
@@ -154,7 +156,10 @@ The web and API deploy independently from the same repository. The web never
 talks directly to the database, file volume, Resend, or Stripe. Spring Boot
 owns the room and account rules; PostgreSQL stores application state; the
 mounted volume keeps accepted room files through API restarts until lifecycle
-cleanup removes them.
+cleanup removes them. Closed, expired, and entry-exhausted rooms become purge
+candidates after 24 hours; stored objects are deleted before their cascading
+database metadata and access-code reservation. A storage error keeps the room
+record reserved so the next cleanup pass can retry safely.
 
 | Layer | Technology | Responsibility |
 | --- | --- | --- |
