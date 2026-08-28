@@ -2,55 +2,35 @@
 
 **Send what you need. Keep nothing longer than necessary.**
 
-## Live website
+[![CI](https://github.com/alan746/MySend/actions/workflows/ci.yml/badge.svg)](https://github.com/alan746/MySend/actions/workflows/ci.yml)
+[![Live app](https://img.shields.io/badge/live-mysend.app-2ea44f)](https://mysend.app)
 
-<table width="100%">
-  <tr>
-    <td align="center">
-      <h2><a href="https://mysend.app">OPEN MYSEND.APP →</a></h2>
-      <p><code>https://mysend.app</code></p>
-      <p>Create or join a ShareRoom directly in the production application.</p>
-    </td>
-  </tr>
-</table>
+MySend is a production-deployed, full-stack workspace for sharing text and
+files through temporary rooms. Guests can open a room without an account, send
+one memorable five-character code, and let the room disappear when its timer
+ends.
 
-## Design baseline
-
-- **Requirements:** **[Read the complete product baseline →](docs/design/01-requirements.md)**
-
-  Functional requirements, quality requirements, invariants, membership limits,
-  scope boundaries, and acceptance checks.
-- **Design process:** **[Open the ordered design process →](docs/design/README.md)**
-
-  Follow the project from the product problem and requirements through use
-  cases, domain modelling, architecture, interaction, interfaces, security,
-  and recorded decisions.
-
-MySend is deployed on **Railway**. The website and Java API run as separate
-Railway services, application records live in Railway PostgreSQL, and room
-uploads use a Railway Volume mounted to the API. Resend delivers account
-security emails from the verified sending domain.
-
-| Production component | Deployment | Public address or storage |
-| --- | --- | --- |
-| Web application | Railway Node.js service | [https://mysend.app](https://mysend.app) |
-| Java API | Railway Spring Boot service | [https://api.mysend.app](https://api.mysend.app) |
-| Application data | Railway PostgreSQL | Private connection from the API |
-| Room files | Railway Volume | Mounted at `/app/uploads` |
-| Security email | Resend HTTPS API | Verified sender domain |
-
-The API address is the backend used by the MySend website; it is not currently
-offered as a versioned public developer API.
-
-MySend is a short-lived sharing workspace for text and files. Open a ShareRoom
-without creating an account, send one memorable five-character code, and let
-the room disappear when its timer ends.
+**[Open the live application →](https://mysend.app)**
 
 <p align="center">
   <a href="https://mysend.app">
     <img src="docs/images/home.png" alt="MySend live home page with guest ShareRoom creation and joining" width="100%">
   </a>
 </p>
+
+## Engineering highlights
+
+- **Lifecycle correctness:** closing, expiry, or entry exhaustion immediately
+  blocks room access; retry-safe cleanup removes stored files before cascading
+  database metadata and releases the room code only after successful deletion.
+- **Security boundaries:** Spring Security, BCrypt, HttpOnly cookies, origin
+  checks, rate limits, expiring email codes, and room-scoped authorization
+  protect account and guest workflows.
+- **Concurrent editing:** optimistic version checks prevent shared clipboard
+  updates from silently overwriting newer content.
+- **Production delivery:** the React web app and Spring Boot API ship as separate
+  Docker services backed by PostgreSQL, Flyway migrations, persistent file
+  storage, Resend email, health checks, and automated GitHub Actions validation.
 
 ## The product in one minute
 
