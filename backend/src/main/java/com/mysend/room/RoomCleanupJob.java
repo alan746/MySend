@@ -20,6 +20,8 @@ import java.time.Instant;
 @Component
 public class RoomCleanupJob {
 
+    static final Duration ROOM_CONTENT_RETENTION = Duration.ofHours(24);
+
     private static final Logger log = LoggerFactory.getLogger(RoomCleanupJob.class);
 
     private final RoomRepository rooms;
@@ -57,7 +59,7 @@ public class RoomCleanupJob {
     @Scheduled(fixedDelayString = "${mysend.cleanup-interval-ms:900000}")
     void cleanExpiredRecords() {
         var now = clock.instant();
-        var roomCutoff = now.minus(Duration.ofDays(7));
+        var roomCutoff = now.minus(ROOM_CONTENT_RETENTION);
 
         accessTokens.deleteExpired(now);
         sessions.deleteExpired(now);

@@ -2,6 +2,7 @@ package com.mysend.account;
 
 import com.mysend.config.AppProperties;
 import com.mysend.security.CookieSupport;
+import com.mysend.security.DeviceIdentityService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -25,15 +26,18 @@ public class AccountController {
     private final AccountService accounts;
     private final AccountSessionService sessions;
     private final AppProperties properties;
+    private final DeviceIdentityService identities;
 
     public AccountController(
             AccountService accounts,
             AccountSessionService sessions,
-            AppProperties properties
+            AppProperties properties,
+            DeviceIdentityService identities
     ) {
         this.accounts = accounts;
         this.sessions = sessions;
         this.properties = properties;
+        this.identities = identities;
     }
 
     @PostMapping("/register/code")
@@ -45,14 +49,26 @@ public class AccountController {
 
     @PostMapping("/register/verify")
     ResponseEntity<AccountView> verify(
+            HttpServletRequest servletRequest,
             @Valid @RequestBody VerificationRequest request
     ) {
-        return authenticated(accounts.verify(request.email(), request.code()));
+        return authenticated(accounts.verify(
+                request.email(),
+                request.code(),
+                identities.provenGuestOwnerKey(servletRequest).orElse(null)
+        ));
     }
 
     @PostMapping("/login")
-    ResponseEntity<AccountView> login(@Valid @RequestBody LoginRequest request) {
-        return authenticated(accounts.login(request.email(), request.password()));
+    ResponseEntity<AccountView> login(
+            HttpServletRequest servletRequest,
+            @Valid @RequestBody LoginRequest request
+    ) {
+        return authenticated(accounts.login(
+                request.email(),
+                request.password(),
+                identities.provenGuestOwnerKey(servletRequest).orElse(null)
+        ));
     }
 
     @PostMapping("/password/code")

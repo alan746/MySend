@@ -3,6 +3,8 @@ package com.mysend.account;
 import com.mysend.common.ApiException;
 import com.mysend.common.Hashing;
 import com.mysend.room.Plan;
+import com.mysend.room.RoomRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,7 +37,9 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom random;
     private final Clock clock;
+    private final RoomRepository rooms;
 
+    @Autowired
     public AccountService(
             AccountRepository accounts,
             EmailVerificationRepository verifications,
@@ -45,7 +49,8 @@ public class AccountService {
             AccountSessionService sessions,
             PasswordEncoder passwordEncoder,
             SecureRandom random,
-            Clock clock
+            Clock clock,
+            RoomRepository rooms
     ) {
         this.accounts = accounts;
         this.verifications = verifications;
@@ -56,6 +61,22 @@ public class AccountService {
         this.passwordEncoder = passwordEncoder;
         this.random = random;
         this.clock = clock;
+        this.rooms = rooms;
+    }
+
+    AccountService(
+            AccountRepository accounts,
+            EmailVerificationRepository verifications,
+            PasswordVerificationRepository passwordVerifications,
+            AuthenticationAttemptRepository attempts,
+            VerificationMailer mailer,
+            AccountSessionService sessions,
+            PasswordEncoder passwordEncoder,
+            SecureRandom random,
+            Clock clock
+    ) {
+        this(accounts, verifications, passwordVerifications, attempts, mailer, sessions,
+                passwordEncoder, random, clock, null);
     }
 
     @Transactional
@@ -100,6 +121,15 @@ public class AccountService {
 
     @Transactional
     public AuthenticatedAccount verify(String emailValue, String code) {
+        return verify(emailValue, code, null);
+    }
+
+    @Transactional
+    public AuthenticatedAccount verify(
+            String emailValue,
+            String code,
+            String deviceOwnerKey
+    ) {
         String email = normalizeEmail(emailValue);
         if (accounts.existsByEmail(email)) {
             throw new ApiException(
@@ -141,11 +171,21 @@ public class AccountService {
                 now
         );
         accounts.insert(account);
+        claimGuestRooms(deviceOwnerKey, account, now);
         attempts.clear(email, AuthenticationAttemptType.VERIFICATION_FAILURE);
         return new AuthenticatedAccount(account, sessions.issue(account));
     }
 
     public AuthenticatedAccount login(String emailValue, String password) {
+        return login(emailValue, password, null);
+    }
+
+    @Transactional
+    public AuthenticatedAccount login(
+            String emailValue,
+            String password,
+            String deviceOwnerKey
+    ) {
         String email = normalizeEmail(emailValue);
         Instant now = clock.instant();
         enforceFailureLimit(
@@ -161,6 +201,7 @@ public class AccountService {
             attempts.record(email, AuthenticationAttemptType.LOGIN_FAILURE, now);
             throw invalidCredentials();
         }
+        claimGuestRooms(deviceOwnerKey, account, now);
         attempts.clear(email, AuthenticationAttemptType.LOGIN_FAILURE);
         return new AuthenticatedAccount(account, sessions.issue(account));
     }
@@ -371,6 +412,12 @@ public class AccountService {
 
     public static String normalizeEmail(String email) {
         return email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
+    }
+
+    private void claimGuestRooms(String deviceOwnerKey, Account account, Instant now) {
+        if (rooms != null && deviceOwnerKey != null && deviceOwnerKey.startsWith("device:")) {
+            rooms.claimActiveGuestRooms(deviceOwnerKey, account.id(), now);
+        }
     }
 
     private static ApiException invalidCode() {

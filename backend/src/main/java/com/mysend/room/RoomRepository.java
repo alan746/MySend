@@ -99,10 +99,35 @@ public class RoomRepository {
                 .list();
     }
 
+    public int claimActiveGuestRooms(String deviceOwnerKey, String accountId, Instant now) {
+        return jdbc.sql("""
+                        update rooms
+                        set owner_key = :accountOwnerKey,
+                            owner_account_id = :accountId,
+                            version = version + 1
+                        where owner_key = :deviceOwnerKey
+                          and owner_account_id is null
+                          and plan = 'GUEST'
+                          and closed_at_ms is null
+                          and expires_at_ms > :now
+                          and access_count < access_limit
+                        """)
+                .param("accountOwnerKey", "account:" + accountId)
+                .param("accountId", accountId)
+                .param("deviceOwnerKey", deviceOwnerKey)
+                .param("now", now.toEpochMilli())
+                .update();
+    }
+
     public boolean consumeEntry(String roomId, Instant now) {
         return jdbc.sql("""
                         update rooms
-                        set access_count = access_count + 1, version = version + 1
+                        set access_count = access_count + 1,
+                            closed_at_ms = case
+                                when access_count + 1 >= access_limit then :now
+                                else closed_at_ms
+                            end,
+                            version = version + 1
                         where id = :id
                           and closed_at_ms is null
                           and expires_at_ms > :now
@@ -176,8 +201,8 @@ public class RoomRepository {
     public List<Room> findClosedBefore(Instant cutoff) {
         return jdbc.sql("""
                         select * from rooms
-                        where (closed_at_ms is not null and closed_at_ms < :cutoff)
-                           or expires_at_ms < :cutoff
+                        where (closed_at_ms is not null and closed_at_ms <= :cutoff)
+                           or expires_at_ms <= :cutoff
                         order by expires_at_ms
                         """)
                 .param("cutoff", cutoff.toEpochMilli())
@@ -189,8 +214,8 @@ public class RoomRepository {
         return jdbc.sql("""
                         delete from rooms
                         where id = :id
-                          and ((closed_at_ms is not null and closed_at_ms < :cutoff)
-                               or expires_at_ms < :cutoff)
+                          and ((closed_at_ms is not null and closed_at_ms <= :cutoff)
+                               or expires_at_ms <= :cutoff)
                         """)
                 .param("id", id)
                 .param("cutoff", cutoff.toEpochMilli())

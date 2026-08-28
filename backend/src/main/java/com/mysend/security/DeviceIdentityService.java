@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Optional;
 
 @Service
 public class DeviceIdentityService {
@@ -54,6 +55,11 @@ public class DeviceIdentityService {
             return created;
         });
         return new OwnerIdentity("device:" + Hashing.sha256(token), null, Plan.GUEST);
+    }
+
+    public Optional<String> provenGuestOwnerKey(HttpServletRequest request) {
+        return CookieSupport.read(request, DEVICE_COOKIE)
+                .map(token -> "device:" + Hashing.sha256(token));
     }
 
     private String randomToken() {
