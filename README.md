@@ -157,7 +157,7 @@ talks directly to the database, file volume, Resend, or Stripe. Spring Boot
 owns the room and account rules; PostgreSQL stores application state; the
 mounted volume keeps accepted room files through API restarts until lifecycle
 cleanup removes them. Closed, expired, and entry-exhausted rooms become purge
-candidates after 24 hours; stored objects are deleted before their cascading
+candidates before the 24-hour deadline; stored objects are deleted before their cascading
 database metadata and access-code reservation. A storage error keeps the room
 record reserved so the next cleanup pass can retry safely.
 

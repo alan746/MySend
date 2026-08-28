@@ -25,6 +25,13 @@ public record Room(
                 || accessCount >= accessLimit;
     }
 
+    public Instant logicalClosureAt() {
+        if (closedAt == null) {
+            return expiresAt;
+        }
+        return closedAt.isBefore(expiresAt) ? closedAt : expiresAt;
+    }
+
     public int remainingEntries() {
         return Math.max(0, accessLimit - accessCount);
     }
