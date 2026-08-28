@@ -62,7 +62,7 @@ class RoomCleanupJobTest {
 
     @Test
     void removesExpiredTokensSessionsVerificationsAndRoomFiles() throws IOException {
-        Instant cutoff = NOW.minus(Duration.ofDays(7));
+        Instant cutoff = NOW.minus(RoomCleanupJob.ROOM_CONTENT_RETENTION);
         Room room = expiredRoom("room-1");
         RoomFile file = new RoomFile(
                 "file-1",
@@ -89,7 +89,7 @@ class RoomCleanupJobTest {
 
     @Test
     void keepsRoomRecordWhenStoredFileCannotBeRemoved() throws IOException {
-        Instant cutoff = NOW.minus(Duration.ofDays(7));
+        Instant cutoff = NOW.minus(RoomCleanupJob.ROOM_CONTENT_RETENTION);
         Room room = expiredRoom("room-2");
         RoomFile file = new RoomFile(
                 "file-2",
@@ -124,8 +124,8 @@ class RoomCleanupJobTest {
                 0,
                 "",
                 0,
-                NOW.minus(Duration.ofDays(9)),
-                NOW.minus(Duration.ofDays(8)),
+                NOW.minus(Duration.ofHours(26)),
+                NOW.minus(Duration.ofHours(25)),
                 null,
                 0
         );

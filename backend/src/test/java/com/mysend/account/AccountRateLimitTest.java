@@ -3,6 +3,7 @@ package com.mysend.account;
 import com.mysend.common.ApiException;
 import com.mysend.common.Hashing;
 import com.mysend.room.Plan;
+import com.mysend.room.RoomRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +35,7 @@ class AccountRateLimitTest {
     private AccountSessionService sessions;
     private PasswordEncoder passwordEncoder;
     private SecureRandom random;
+    private RoomRepository rooms;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +47,7 @@ class AccountRateLimitTest {
         sessions = mock(AccountSessionService.class);
         passwordEncoder = mock(PasswordEncoder.class);
         random = mock(SecureRandom.class);
+        rooms = mock(RoomRepository.class);
     }
 
     @Test
@@ -183,6 +186,21 @@ class AccountRateLimitTest {
         verify(attempts).clear(EMAIL, AuthenticationAttemptType.LOGIN_FAILURE);
     }
 
+    @Test
+    void claimsOnlyRoomsProvenByTheLoginDevice() {
+        Account account = new Account(
+                "account-id", EMAIL, "password-hash", Plan.FREE,
+                null, null, NOW, NOW
+        );
+        when(accounts.findByEmail(EMAIL)).thenReturn(Optional.of(account));
+        when(passwordEncoder.matches("password", "password-hash")).thenReturn(true);
+        when(sessions.issue(account)).thenReturn("session-token");
+
+        serviceAt(NOW).login(EMAIL, "password", "device:proven-hash");
+
+        verify(rooms).claimActiveGuestRooms("device:proven-hash", "account-id", NOW);
+    }
+
     private AccountService serviceAt(Instant now) {
         return new AccountService(
                 accounts,
@@ -193,7 +211,8 @@ class AccountRateLimitTest {
                 sessions,
                 passwordEncoder,
                 random,
-                Clock.fixed(now, ZoneOffset.UTC)
+                Clock.fixed(now, ZoneOffset.UTC),
+                rooms
         );
     }
 
