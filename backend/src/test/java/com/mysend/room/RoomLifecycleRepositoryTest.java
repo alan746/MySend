@@ -1,5 +1,7 @@
 package com.mysend.room;
 
+import com.mysend.account.Account;
+import com.mysend.account.AccountRepository;
 import com.mysend.file.RoomFile;
 import com.mysend.file.RoomFileRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,16 +34,24 @@ class RoomLifecycleRepositoryTest {
     private RoomAccessTokenRepository accessTokens;
 
     @Autowired
+    private AccountRepository accounts;
+
+    @Autowired
     private JdbcClient jdbc;
 
     @BeforeEach
     void clearRooms() {
         jdbc.sql("delete from rooms").update();
+        jdbc.sql("delete from accounts").update();
     }
 
     @Test
     void claimsOnlyMatchingOpenGuestRoomsAndKeepsTheirSnapshot() {
         Instant originalExpiry = NOW.plus(Duration.ofHours(2));
+        accounts.insert(new Account(
+                "account-1", "owner@example.com", "password-hash", Plan.FREE,
+                null, null, NOW, NOW
+        ));
         rooms.insert(room("open", "1000A", "device:mine", Plan.GUEST,
                 originalExpiry, null, 0, 3));
         rooms.insert(room("other-device", "1001A", "device:other", Plan.GUEST,
