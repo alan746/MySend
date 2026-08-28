@@ -140,10 +140,15 @@ class AccountRateLimitTest {
         when(verifications.consume(verification.id(), NOW)).thenReturn(true);
         when(sessions.issue(any(Account.class))).thenReturn("session-token");
         AccountService.AuthenticatedAccount authenticated = serviceAt(NOW)
-                .verify(EMAIL, "123456");
+                .verify(EMAIL, "123456", "device:registration-hash");
 
         assertThat(authenticated.account().plan()).isEqualTo(Plan.FREE);
         verify(attempts).clear(EMAIL, AuthenticationAttemptType.VERIFICATION_FAILURE);
+        verify(rooms).claimActiveGuestRooms(
+                "device:registration-hash",
+                authenticated.account().id(),
+                NOW
+        );
     }
 
     @Test

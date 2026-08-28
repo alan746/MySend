@@ -18,6 +18,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -62,7 +63,7 @@ class RoomCleanupJobTest {
 
     @Test
     void removesExpiredTokensSessionsVerificationsAndRoomFiles() throws IOException {
-        Instant cutoff = NOW.minus(RoomCleanupJob.ROOM_CONTENT_RETENTION);
+        Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
         Room room = expiredRoom("room-1");
         RoomFile file = new RoomFile(
                 "file-1",
@@ -85,11 +86,14 @@ class RoomCleanupJobTest {
         verify(authenticationAttempts).deleteOlderThan(NOW.minus(Duration.ofDays(1)));
         verify(fileStore).delete(file.storageKey());
         verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);
+        var deletionOrder = inOrder(fileStore, rooms);
+        deletionOrder.verify(fileStore).delete(file.storageKey());
+        deletionOrder.verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);
     }
 
     @Test
     void keepsRoomRecordWhenStoredFileCannotBeRemoved() throws IOException {
-        Instant cutoff = NOW.minus(RoomCleanupJob.ROOM_CONTENT_RETENTION);
+        Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
         Room room = expiredRoom("room-2");
         RoomFile file = new RoomFile(
                 "file-2",
