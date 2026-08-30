@@ -4,13 +4,11 @@ import com.mysend.account.AppSessionRepository;
 import com.mysend.account.AuthenticationAttemptRepository;
 import com.mysend.account.EmailVerificationRepository;
 import com.mysend.account.PasswordVerificationRepository;
-import com.mysend.file.FileStore;
-import com.mysend.file.RoomFile;
-import com.mysend.file.RoomFileRepository;
+import com.mysend.file.StorageDeletionService;
+import com.mysend.operations.OperationalMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,9 +16,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +25,7 @@ class RoomCleanupJobTest {
     private static final Instant NOW = Instant.parse("2026-08-18T12:00:00Z");
 
     private RoomRepository rooms;
-    private RoomFileRepository files;
-    private FileStore fileStore;
+    private StorageDeletionService storageDeletions;
     private RoomAccessTokenRepository accessTokens;
     private AppSessionRepository sessions;
     private EmailVerificationRepository verifications;
@@ -38,13 +33,13 @@ class RoomCleanupJobTest {
     private AuthenticationAttemptRepository authenticationAttempts;
     private RoomAbuseAttemptRepository roomAbuseAttempts;
     private RoomAbuseService roomAbuse;
+    private OperationalMetrics metrics;
     private RoomCleanupJob cleanupJob;
 
     @BeforeEach
     void setUp() {
         rooms = mock(RoomRepository.class);
-        files = mock(RoomFileRepository.class);
-        fileStore = mock(FileStore.class);
+        storageDeletions = mock(StorageDeletionService.class);
         accessTokens = mock(RoomAccessTokenRepository.class);
         sessions = mock(AppSessionRepository.class);
         verifications = mock(EmailVerificationRepository.class);
@@ -52,11 +47,11 @@ class RoomCleanupJobTest {
         authenticationAttempts = mock(AuthenticationAttemptRepository.class);
         roomAbuseAttempts = mock(RoomAbuseAttemptRepository.class);
         roomAbuse = mock(RoomAbuseService.class);
+        metrics = mock(OperationalMetrics.class);
         when(roomAbuse.retention()).thenReturn(Duration.ofHours(2));
         cleanupJob = new RoomCleanupJob(
                 rooms,
-                files,
-                fileStore,
+                storageDeletions,
                 accessTokens,
                 sessions,
                 verifications,
@@ -64,25 +59,17 @@ class RoomCleanupJobTest {
                 authenticationAttempts,
                 roomAbuseAttempts,
                 roomAbuse,
+                metrics,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
     @Test
-    void removesExpiredTokensSessionsVerificationsAndRoomFiles() throws IOException {
+    void removesExpiredTokensSessionsVerificationsAndQueuesRoomFiles() {
         Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
         Room room = expiredRoom("room-1");
-        RoomFile file = new RoomFile(
-                "file-1",
-                room.id(),
-                "stored-file.pdf",
-                "brief.pdf",
-                "application/pdf",
-                2048,
-                cutoff.minusSeconds(60)
-        );
         when(rooms.findClosedBefore(cutoff)).thenReturn(List.of(room));
-        when(files.findByRoomId(room.id())).thenReturn(List.of(file));
+        when(storageDeletions.purgeRoom(room, cutoff, NOW)).thenReturn(true);
 
         cleanupJob.cleanExpiredRecords();
 
@@ -92,35 +79,23 @@ class RoomCleanupJobTest {
         verify(passwordVerifications).deleteExpired(NOW);
         verify(authenticationAttempts).deleteOlderThan(NOW.minus(Duration.ofDays(1)));
         verify(roomAbuseAttempts).deleteOlderThan(NOW.minus(Duration.ofHours(2)));
-        verify(fileStore).delete(file.storageKey());
-        verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);
-        var deletionOrder = inOrder(fileStore, rooms);
-        deletionOrder.verify(fileStore).delete(file.storageKey());
-        deletionOrder.verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);
+        verify(storageDeletions).purgeRoom(room, cutoff, NOW);
+        verify(metrics).recordRoomPurged(Duration.ofSeconds(90000));
     }
 
     @Test
-    void keepsRoomRecordWhenStoredFileCannotBeRemoved() throws IOException {
+    void continuesCleanupWhenRoomFilesCannotBeQueued() {
         Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
         Room room = expiredRoom("room-2");
-        RoomFile file = new RoomFile(
-                "file-2",
-                room.id(),
-                "locked-file.zip",
-                "archive.zip",
-                "application/zip",
-                1024,
-                cutoff.minusSeconds(60)
-        );
         when(rooms.findClosedBefore(cutoff)).thenReturn(List.of(room));
-        when(files.findByRoomId(room.id())).thenReturn(List.of(file));
-        doThrow(new IOException("file is locked"))
-                .when(fileStore)
-                .delete(file.storageKey());
+        doThrow(new IllegalStateException("database unavailable"))
+                .when(storageDeletions)
+                .purgeRoom(room, cutoff, NOW);
 
         cleanupJob.cleanExpiredRecords();
 
-        verify(rooms, never()).deleteByIdIfClosedBefore(room.id(), cutoff);
+        verify(storageDeletions).purgeRoom(room, cutoff, NOW);
+        verify(metrics).recordCleanupFailure();
     }
 
     private Room expiredRoom(String id) {

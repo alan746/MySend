@@ -1,5 +1,7 @@
 package com.mysend.config;
 
+import com.mysend.file.StorageProperties;
+import com.mysend.operations.OperationsProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.mock.env.MockEnvironment;
@@ -36,7 +38,12 @@ class ProductionConfigurationValidatorTest {
                         "production-room-abuse-hash-key-1234567890"
                 );
         ProductionConfigurationValidator validator =
-                new ProductionConfigurationValidator(properties, environment);
+                new ProductionConfigurationValidator(
+                        properties,
+                        s3Storage(),
+                        operations("production-operations-token-1234567890"),
+                        environment
+                );
 
         assertThatCode(() -> validator.run(new DefaultApplicationArguments()))
                 .doesNotThrowAnyException();
@@ -64,7 +71,12 @@ class ProductionConfigurationValidatorTest {
                         "production-room-abuse-hash-key-1234567890"
                 );
         ProductionConfigurationValidator validator =
-                new ProductionConfigurationValidator(properties, environment);
+                new ProductionConfigurationValidator(
+                        properties,
+                        s3Storage(),
+                        operations("production-operations-token-1234567890"),
+                        environment
+                );
 
         assertThatCode(() -> validator.run(new DefaultApplicationArguments()))
                 .doesNotThrowAnyException();
@@ -88,7 +100,12 @@ class ProductionConfigurationValidatorTest {
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("spring.datasource.url", "jdbc:h2:file:./data/mysend");
         ProductionConfigurationValidator validator =
-                new ProductionConfigurationValidator(properties, environment);
+                new ProductionConfigurationValidator(
+                        properties,
+                        localStorage(),
+                        operations("local-operations-token"),
+                        environment
+                );
 
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> validator.run(new DefaultApplicationArguments()))
@@ -98,8 +115,8 @@ class ProductionConfigurationValidatorTest {
                                 "COOKIE_SECURE must be true",
                                 "APP_BASE_URL must use HTTPS",
                                 "WEB_ORIGINS must contain only HTTPS origins",
-                                "UPLOAD_DIRECTORY must be an absolute path",
-                                "STORAGE_PERSISTENT must be true",
+                                "STORAGE_TYPE must be s3",
+                                "OPERATIONS_METRICS_TOKEN must contain at least 32 non-default characters",
                                 "MAIL_DELIVERY_ENABLED must be true",
                                 "DEVELOPMENT_CODE_ENABLED must be false",
                                 "MAIL_FROM must use a verified sender",
@@ -152,5 +169,43 @@ class ProductionConfigurationValidatorTest {
     private Path absoluteUploadDirectory() {
         return Path.of(System.getProperty("user.dir"), "app", "uploads")
                 .toAbsolutePath();
+    }
+
+    private StorageProperties s3Storage() {
+        return new StorageProperties(
+                "s3",
+                Duration.ofHours(1),
+                Duration.ofMinutes(1),
+                Duration.ofMinutes(15),
+                10L * 1024 * 1024 * 1024,
+                new StorageProperties.S3(
+                        "https://storage.railway.app",
+                        "auto",
+                        "mysend-files-example",
+                        "access-key",
+                        "secret-key",
+                        "virtual",
+                        "uploads"
+                )
+        );
+    }
+
+    private StorageProperties localStorage() {
+        return new StorageProperties(
+                "local",
+                Duration.ofHours(1),
+                Duration.ofMinutes(1),
+                Duration.ofMinutes(15),
+                10L * 1024 * 1024 * 1024,
+                null
+        );
+    }
+
+    private OperationsProperties operations(String token) {
+        return new OperationsProperties(
+                token,
+                Duration.ofMinutes(30),
+                Duration.ofMinutes(30)
+        );
     }
 }

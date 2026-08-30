@@ -27,7 +27,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,operations
   endpoint:
     health:
       probes:
@@ -42,6 +42,20 @@ mysend:
   mail-delivery-enabled: ${MAIL_DELIVERY_ENABLED:false}
   development-code-enabled: ${DEVELOPMENT_CODE_ENABLED:false}
   storage-persistent: ${STORAGE_PERSISTENT:false}
+  storage:
+    type: ${STORAGE_TYPE:local}
+    orphan-grace-period: ${STORAGE_ORPHAN_GRACE_PERIOD:1h}
+    delete-interval: ${STORAGE_DELETE_INTERVAL:1m}
+    reconcile-interval: ${STORAGE_RECONCILE_INTERVAL:15m}
+    capacity-warning-bytes: ${STORAGE_CAPACITY_WARNING_BYTES:10737418240}
+    s3:
+      endpoint: ${AWS_ENDPOINT_URL:}
+      region: ${AWS_DEFAULT_REGION:auto}
+      bucket: ${AWS_S3_BUCKET_NAME:}
+      access-key-id: ${AWS_ACCESS_KEY_ID:}
+      secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+      url-style: ${AWS_S3_URL_STYLE:virtual}
+      prefix: ${STORAGE_PREFIX:uploads}
   billing-enabled: ${BILLING_ENABLED:false}
   room-abuse:
     hash-key: ${ROOM_ABUSE_HASH_KEY:local-room-abuse-hash-key-change-me}
@@ -57,6 +71,10 @@ mysend:
       window: ${ROOM_UPLOAD_RATE_WINDOW:10m}
       ip-limit: ${ROOM_UPLOAD_IP_LIMIT:240}
       actor-limit: ${ROOM_UPLOAD_ACTOR_LIMIT:60}
+  operations:
+    metrics-token: ${OPERATIONS_METRICS_TOKEN:local-operations-token}
+    cleanup-stale-after: ${CLEANUP_STALE_AFTER:30m}
+    deletion-backlog-warning: ${STORAGE_DELETION_BACKLOG_WARNING:30m}
   resend:
     api-key: ${RESEND_API_KEY:}
     base-url: ${RESEND_API_BASE_URL:https://api.resend.com}

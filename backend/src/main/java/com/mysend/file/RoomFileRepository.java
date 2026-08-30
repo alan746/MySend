@@ -67,6 +67,22 @@ public class RoomFileRepository {
                 .update() == 1;
     }
 
+    public boolean existsByStorageKey(String storageKey) {
+        return jdbc.sql("""
+                        select count(*) from room_files
+                        where storage_key = :storageKey
+                        """)
+                .param("storageKey", storageKey)
+                .query(Integer.class)
+                .single() > 0;
+    }
+
+    public long totalSizeBytes() {
+        return jdbc.sql("select coalesce(sum(size_bytes), 0) from room_files")
+                .query(Long.class)
+                .single();
+    }
+
     private static RoomFile mapFile(ResultSet resultSet, int rowNumber) throws SQLException {
         return new RoomFile(
                 resultSet.getString("id"),

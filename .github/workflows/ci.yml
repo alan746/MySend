@@ -71,3 +71,62 @@ jobs:
         uses: actions/checkout@v7
       - name: Build production image
         run: docker build --tag mysend-api:ci backend
+
+  postgres-restore-drill:
+    name: PostgreSQL restore drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mysend_source
+          POSTGRES_USER: mysend
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mysend -d mysend_source"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Check backup scripts
+        run: bash ops/postgres/test.sh
+      - name: Build PostgreSQL tools image
+        run: docker build --tag mysend-postgres-tools:ci ops/postgres
+      - name: Prepare source and restore databases
+        env:
+          PGPASSWORD: test-password
+        run: |
+          docker run --rm --network host \
+            --env PGPASSWORD \
+            --volume "$PWD/backend/src/main/resources/db/migration:/migrations:ro" \
+            postgres:17-alpine \
+            sh -c 'for migration in /migrations/V*.sql; do psql -h 127.0.0.1 -U mysend -d mysend_source --set ON_ERROR_STOP=1 --file "$migration"; done'
+          docker run --rm --network host \
+            --env PGPASSWORD \
+            postgres:17-alpine \
+            psql -h 127.0.0.1 -U mysend -d mysend_source --set ON_ERROR_STOP=1 \
+            --command "insert into rooms (id, access_code, owner_key, plan, visibility, access_limit, access_count, clipboard_text, file_bytes, created_at_ms, expires_at_ms, version) values ('restore-fixture', 'RSTR1', 'owner', 'FREE', 'PUBLIC', 5, 0, 'restore-check', 0, 1, 2, 0)"
+          docker run --rm --network host \
+            --env PGPASSWORD \
+            postgres:17-alpine \
+            createdb -h 127.0.0.1 -U mysend mysend_restore_drill_ci
+      - name: Restore and verify the backup
+        run: |
+          docker run --rm --network host \
+            --env SOURCE_DATABASE_URL \
+            --env RESTORE_DATABASE_URL \
+            mysend-postgres-tools:ci \
+            /usr/local/bin/mysend-restore-drill
+        env:
+          SOURCE_DATABASE_URL: postgresql://mysend:test-password@127.0.0.1:5432/mysend_source
+          RESTORE_DATABASE_URL: postgresql://mysend:test-password@127.0.0.1:5432/mysend_restore_drill_ci
+      - name: Verify restored data
+        env:
+          PGPASSWORD: test-password
+        run: |
+          test "$(docker run --rm --network host --env PGPASSWORD postgres:17-alpine psql -h 127.0.0.1 -U mysend -d mysend_restore_drill_ci --tuples-only --no-align --command "select clipboard_text from rooms where id = 'restore-fixture'")" = "restore-check"

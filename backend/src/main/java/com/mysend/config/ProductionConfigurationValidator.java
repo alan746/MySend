@@ -1,5 +1,7 @@
 package com.mysend.config;
 
+import com.mysend.file.StorageProperties;
+import com.mysend.operations.OperationsProperties;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -14,13 +16,19 @@ import java.util.List;
 public class ProductionConfigurationValidator implements ApplicationRunner {
 
     private final AppProperties properties;
+    private final StorageProperties storage;
+    private final OperationsProperties operations;
     private final Environment environment;
 
     public ProductionConfigurationValidator(
             AppProperties properties,
+            StorageProperties storage,
+            OperationsProperties operations,
             Environment environment
     ) {
         this.properties = properties;
+        this.storage = storage;
+        this.operations = operations;
         this.environment = environment;
     }
 
@@ -54,12 +62,12 @@ public class ProductionConfigurationValidator implements ApplicationRunner {
                 .anyMatch(origin -> origin == null || !origin.startsWith("https://"))) {
             problems.add("WEB_ORIGINS must contain only HTTPS origins");
         }
-        if (properties.uploadDirectory() == null
-                || !properties.uploadDirectory().isAbsolute()) {
-            problems.add("UPLOAD_DIRECTORY must be an absolute path");
-        }
-        if (!properties.storagePersistent()) {
-            problems.add("STORAGE_PERSISTENT must be true after mounting durable storage");
+        validateStorage(problems);
+        if (operations == null
+                || operations.metricsToken() == null
+                || operations.metricsToken().strip().length() < 32
+                || operations.metricsToken().equals("local-operations-token")) {
+            problems.add("OPERATIONS_METRICS_TOKEN must contain at least 32 non-default characters");
         }
         if (!properties.mailDeliveryEnabled()) {
             problems.add("MAIL_DELIVERY_ENABLED must be true");
@@ -92,6 +100,31 @@ public class ProductionConfigurationValidator implements ApplicationRunner {
             validateStripe(problems);
         }
         return problems;
+    }
+
+    private void validateStorage(List<String> problems) {
+        if (storage == null || !storage.usesS3()) {
+            problems.add("STORAGE_TYPE must be s3");
+            return;
+        }
+        StorageProperties.S3 s3 = storage.s3();
+        if (s3 == null
+                || isBlank(s3.endpoint())
+                || !s3.endpoint().startsWith("https://")) {
+            problems.add("AWS_ENDPOINT_URL must use HTTPS");
+        }
+        if (s3 == null || isBlank(s3.region())) {
+            problems.add("AWS_DEFAULT_REGION is required");
+        }
+        if (s3 == null || isBlank(s3.bucket())) {
+            problems.add("AWS_S3_BUCKET_NAME is required");
+        }
+        if (s3 == null || isBlank(s3.accessKeyId())) {
+            problems.add("AWS_ACCESS_KEY_ID is required");
+        }
+        if (s3 == null || isBlank(s3.secretAccessKey())) {
+            problems.add("AWS_SECRET_ACCESS_KEY is required");
+        }
     }
 
     private void validateStripe(List<String> problems) {

@@ -12,8 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +30,7 @@ public class FileBoardService {
     private final RoomRepository roomRepository;
     private final RoomFileRepository files;
     private final FileStore store;
+    private final StorageDeletionService storageDeletions;
     private final Clock clock;
 
     public FileBoardService(
@@ -39,12 +38,14 @@ public class FileBoardService {
             RoomRepository roomRepository,
             RoomFileRepository files,
             FileStore store,
+            StorageDeletionService storageDeletions,
             Clock clock
     ) {
         this.rooms = rooms;
         this.roomRepository = roomRepository;
         this.files = files;
         this.store = store;
+        this.storageDeletions = storageDeletions;
         this.clock = clock;
     }
 
@@ -91,16 +92,29 @@ public class FileBoardService {
                 upload.getSize(),
                 clock.instant()
         );
+        boolean stored = false;
         try {
-            store.put(storageKey, upload.getInputStream());
+            store.put(
+                    storageKey,
+                    upload.getInputStream(),
+                    upload.getSize(),
+                    file.contentType()
+            );
+            stored = true;
             files.insert(file);
             return file;
         } catch (IOException exception) {
+            compensateFailedUpload(file);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "FILE_STORE_FAILED",
                     "The file could not be stored"
             );
+        } catch (RuntimeException exception) {
+            if (stored) {
+                compensateFailedUpload(file);
+            }
+            throw exception;
         }
     }
 
@@ -113,18 +127,13 @@ public class FileBoardService {
         Room room = rooms.getAuthorized(accessCode, owner, roomToken);
         RoomFile file = files.findByIdAndRoomId(fileId, room.id())
                 .orElseThrow(FileBoardService::fileNotFound);
-        Path path = store.resolve(file.storageKey());
-        if (!Files.isRegularFile(path)) {
-            throw fileNotFound();
-        }
         try {
-            return new Download(file, new InputStreamResource(Files.newInputStream(path)));
+            return new Download(file, new InputStreamResource(store.open(file.storageKey())));
         } catch (IOException exception) {
             throw fileNotFound();
         }
     }
 
-    @Transactional
     public void delete(
             String accessCode,
             String fileId,
@@ -133,20 +142,17 @@ public class FileBoardService {
         Room room = rooms.getOwned(accessCode, owner);
         RoomFile file = files.findByIdAndRoomId(fileId, room.id())
                 .orElseThrow(FileBoardService::fileNotFound);
+        storageDeletions.deleteFile(room, file, clock.instant());
+    }
+
+    private void compensateFailedUpload(RoomFile file) {
         try {
             store.delete(file.storageKey());
         } catch (IOException exception) {
-            throw new ApiException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "FILE_DELETE_FAILED",
-                    "The file could not be removed from storage"
-            );
-        }
-        if (files.delete(file.id(), room.id())) {
-            roomRepository.adjustFileBytes(
-                    room.id(),
-                    -file.sizeBytes(),
-                    room.plan().limits().roomFileBytes()
+            storageDeletions.enqueueCompensation(
+                    file.storageKey(),
+                    file.sizeBytes(),
+                    clock.instant()
             );
         }
     }

@@ -1,6 +1,7 @@
 package com.mysend.security;
 
 import com.mysend.config.AppProperties;
+import com.mysend.operations.OperationsTokenFilter;
 import com.mysend.room.RoomAbuseFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             BrowserMutationFilter browserMutationFilter,
-            RoomAbuseFilter roomAbuseFilter
+            RoomAbuseFilter roomAbuseFilter,
+            OperationsTokenFilter operationsTokenFilter
     ) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
@@ -32,10 +34,12 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/prometheus", "/actuator/operations").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
                         .anyRequest().denyAll())
                 .addFilterBefore(browserMutationFilter, AuthorizationFilter.class)
+                .addFilterBefore(operationsTokenFilter, BrowserMutationFilter.class)
                 .addFilterAfter(roomAbuseFilter, BrowserMutationFilter.class)
                 .build();
     }
