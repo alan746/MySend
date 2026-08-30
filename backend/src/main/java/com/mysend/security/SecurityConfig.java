@@ -1,6 +1,7 @@
 package com.mysend.security;
 
 import com.mysend.config.AppProperties;
+import com.mysend.room.RoomAbuseFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,7 +21,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            BrowserMutationFilter browserMutationFilter
+            BrowserMutationFilter browserMutationFilter,
+            RoomAbuseFilter roomAbuseFilter
     ) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
@@ -34,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").permitAll()
                         .anyRequest().denyAll())
                 .addFilterBefore(browserMutationFilter, AuthorizationFilter.class)
+                .addFilterAfter(roomAbuseFilter, BrowserMutationFilter.class)
                 .build();
     }
 

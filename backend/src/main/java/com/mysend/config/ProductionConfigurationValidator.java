@@ -80,6 +80,14 @@ public class ProductionConfigurationValidator implements ApplicationRunner {
                 || !properties.resend().baseUrl().startsWith("https://")) {
             problems.add("RESEND_API_BASE_URL must use HTTPS");
         }
+        String roomAbuseHashKey = environment.getProperty(
+                "mysend.room-abuse.hash-key",
+                ""
+        ).strip();
+        if (roomAbuseHashKey.length() < 32
+                || roomAbuseHashKey.equals("local-room-abuse-hash-key-change-me")) {
+            problems.add("ROOM_ABUSE_HASH_KEY must contain at least 32 non-default characters");
+        }
         if (properties.billingEnabled()) {
             validateStripe(problems);
         }

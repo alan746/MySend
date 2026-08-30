@@ -17,6 +17,8 @@ import java.util.Optional;
 public class DeviceIdentityService {
 
     public static final String DEVICE_COOKIE = "mysend_device";
+    private static final String RESOLVED_IDENTITY_ATTRIBUTE =
+            DeviceIdentityService.class.getName() + ".resolvedIdentity";
 
     private final SecureRandom random;
     private final AppProperties properties;
@@ -33,13 +35,19 @@ public class DeviceIdentityService {
     }
 
     public OwnerIdentity resolve(HttpServletRequest request, HttpServletResponse response) {
+        Object resolved = request.getAttribute(RESOLVED_IDENTITY_ATTRIBUTE);
+        if (resolved instanceof OwnerIdentity identity) {
+            return identity;
+        }
         var account = accountSessions.current(request);
         if (account.isPresent()) {
-            return new OwnerIdentity(
+            OwnerIdentity identity = new OwnerIdentity(
                     "account:" + account.get().id(),
                     account.get().id(),
                     account.get().plan()
             );
+            request.setAttribute(RESOLVED_IDENTITY_ATTRIBUTE, identity);
+            return identity;
         }
         String token = CookieSupport.read(request, DEVICE_COOKIE).orElseGet(() -> {
             String created = randomToken();
@@ -54,7 +62,13 @@ public class DeviceIdentityService {
             );
             return created;
         });
-        return new OwnerIdentity("device:" + Hashing.sha256(token), null, Plan.GUEST);
+        OwnerIdentity identity = new OwnerIdentity(
+                "device:" + Hashing.sha256(token),
+                null,
+                Plan.GUEST
+        );
+        request.setAttribute(RESOLVED_IDENTITY_ATTRIBUTE, identity);
+        return identity;
     }
 
     public Optional<String> provenGuestOwnerKey(HttpServletRequest request) {

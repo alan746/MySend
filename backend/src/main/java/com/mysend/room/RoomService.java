@@ -20,6 +20,7 @@ public class RoomService {
     private final RoomAccessService roomAccess;
     private final AccessCodeGenerator codes;
     private final PasswordEncoder passwordEncoder;
+    private final String unavailablePasswordHash;
     private final Clock clock;
 
     public RoomService(
@@ -33,6 +34,7 @@ public class RoomService {
         this.roomAccess = roomAccess;
         this.codes = codes;
         this.passwordEncoder = passwordEncoder;
+        this.unavailablePasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
         this.clock = clock;
     }
 
@@ -92,19 +94,14 @@ public class RoomService {
 
     @Transactional
     public EnteredRoom enter(String accessCode, String password) {
-        Room room = getOpen(accessCode);
-        if (room.passwordHash() != null
-                && (password == null || !passwordEncoder.matches(password, room.passwordHash()))) {
-            throw new ApiException(
-                    HttpStatus.UNAUTHORIZED,
-                    "ROOM_PASSWORD_INCORRECT",
-                    "The room password is incorrect"
-            );
+        Room room = findEntryRoom(accessCode, password);
+        if (!passwordMatches(room, password)) {
+            throw roomUnavailable();
         }
         if (!rooms.consumeEntry(room.id(), clock.instant())) {
-            throw roomClosed();
+            throw roomUnavailable();
         }
-        Room entered = rooms.findById(room.id()).orElseThrow(RoomService::roomNotFound);
+        Room entered = rooms.findById(room.id()).orElseThrow(RoomService::roomUnavailable);
         return new EnteredRoom(entered, roomAccess.issue(entered));
     }
 
@@ -113,13 +110,12 @@ public class RoomService {
             OwnerIdentity owner,
             String roomToken
     ) {
-        Room room = getOpen(accessCode);
+        Room room = findRetained(accessCode);
         if (!room.isOwnedBy(owner.ownerKey()) && !roomAccess.canAccess(room, roomToken)) {
-            throw new ApiException(
-                    HttpStatus.UNAUTHORIZED,
-                    "ROOM_ACCESS_REQUIRED",
-                    "Enter the access code before opening this room"
-            );
+            throw roomUnavailable();
+        }
+        if (room.isClosedAt(clock.instant())) {
+            throw roomClosed();
         }
         return room;
     }
@@ -162,7 +158,7 @@ public class RoomService {
                     "The room changed in another tab; refresh before saving again"
             );
         }
-        return rooms.findById(room.id()).orElseThrow(RoomService::roomNotFound);
+        return rooms.findById(room.id()).orElseThrow(RoomService::roomUnavailable);
     }
 
     @Transactional
@@ -209,7 +205,7 @@ public class RoomService {
                     "The room changed in another tab; refresh before saving again"
             );
         }
-        return rooms.findById(room.id()).orElseThrow(RoomService::roomNotFound);
+        return rooms.findById(room.id()).orElseThrow(RoomService::roomUnavailable);
     }
 
     @Transactional
@@ -221,27 +217,51 @@ public class RoomService {
     }
 
     private Room requireOwner(String accessCode, OwnerIdentity owner) {
-        Room room = getOpen(accessCode);
+        Room room = findRetained(accessCode);
         if (!room.isOwnedBy(owner.ownerKey())) {
-            throw new ApiException(
-                    HttpStatus.FORBIDDEN,
-                    "ROOM_OWNER_REQUIRED",
-                    "Only the room owner can change these settings"
-            );
+            throw roomUnavailable();
         }
-        return room;
-    }
-
-    private Room getOpen(String accessCode) {
-        String normalized = AccessCodeGenerator.normalize(accessCode);
-        if (!AccessCodeGenerator.isValid(normalized)) {
-            throw roomNotFound();
-        }
-        Room room = rooms.findByCode(normalized).orElseThrow(RoomService::roomNotFound);
         if (room.isClosedAt(clock.instant())) {
             throw roomClosed();
         }
         return room;
+    }
+
+    private Room findRetained(String accessCode) {
+        String normalized = AccessCodeGenerator.normalize(accessCode);
+        if (!AccessCodeGenerator.isValid(normalized)) {
+            throw roomUnavailable();
+        }
+        return rooms.findByCode(normalized).orElseThrow(RoomService::roomUnavailable);
+    }
+
+    private Room findEntryRoom(String accessCode, String password) {
+        String normalized = AccessCodeGenerator.normalize(accessCode);
+        if (!AccessCodeGenerator.isValid(normalized)) {
+            return unavailableEntry(password);
+        }
+        Room room = rooms.findByCode(normalized).orElse(null);
+        if (room == null || room.isClosedAt(clock.instant())) {
+            return unavailableEntry(password);
+        }
+        return room;
+    }
+
+    private Room unavailableEntry(String password) {
+        passwordEncoder.matches(passwordValue(password), unavailablePasswordHash);
+        throw roomUnavailable();
+    }
+
+    private boolean passwordMatches(Room room, String password) {
+        if (room.passwordHash() == null) {
+            passwordEncoder.matches(passwordValue(password), unavailablePasswordHash);
+            return true;
+        }
+        return passwordEncoder.matches(passwordValue(password), room.passwordHash());
+    }
+
+    private static String passwordValue(String password) {
+        return password == null ? "" : password;
     }
 
     private String resolvePasswordHash(Room room, String password) {
@@ -251,11 +271,11 @@ public class RoomService {
         return passwordEncoder.encode(password);
     }
 
-    private static ApiException roomNotFound() {
+    private static ApiException roomUnavailable() {
         return new ApiException(
                 HttpStatus.NOT_FOUND,
-                "ROOM_NOT_FOUND",
-                "No room matches that access code"
+                "ROOM_UNAVAILABLE",
+                "The room is unavailable or the password is incorrect"
         );
     }
 

@@ -36,6 +36,8 @@ class RoomCleanupJobTest {
     private EmailVerificationRepository verifications;
     private PasswordVerificationRepository passwordVerifications;
     private AuthenticationAttemptRepository authenticationAttempts;
+    private RoomAbuseAttemptRepository roomAbuseAttempts;
+    private RoomAbuseService roomAbuse;
     private RoomCleanupJob cleanupJob;
 
     @BeforeEach
@@ -48,6 +50,9 @@ class RoomCleanupJobTest {
         verifications = mock(EmailVerificationRepository.class);
         passwordVerifications = mock(PasswordVerificationRepository.class);
         authenticationAttempts = mock(AuthenticationAttemptRepository.class);
+        roomAbuseAttempts = mock(RoomAbuseAttemptRepository.class);
+        roomAbuse = mock(RoomAbuseService.class);
+        when(roomAbuse.retention()).thenReturn(Duration.ofHours(2));
         cleanupJob = new RoomCleanupJob(
                 rooms,
                 files,
@@ -57,6 +62,8 @@ class RoomCleanupJobTest {
                 verifications,
                 passwordVerifications,
                 authenticationAttempts,
+                roomAbuseAttempts,
+                roomAbuse,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -84,6 +91,7 @@ class RoomCleanupJobTest {
         verify(verifications).deleteExpired(NOW);
         verify(passwordVerifications).deleteExpired(NOW);
         verify(authenticationAttempts).deleteOlderThan(NOW.minus(Duration.ofDays(1)));
+        verify(roomAbuseAttempts).deleteOlderThan(NOW.minus(Duration.ofHours(2)));
         verify(fileStore).delete(file.storageKey());
         verify(rooms).deleteByIdIfClosedBefore(room.id(), cutoff);
         var deletionOrder = inOrder(fileStore, rooms);

@@ -1,6 +1,6 @@
 server:
   port: ${SERVER_PORT:8080}
-  forward-headers-strategy: framework
+  forward-headers-strategy: native
   servlet:
     session:
       cookie:
@@ -43,6 +43,20 @@ mysend:
   development-code-enabled: ${DEVELOPMENT_CODE_ENABLED:false}
   storage-persistent: ${STORAGE_PERSISTENT:false}
   billing-enabled: ${BILLING_ENABLED:false}
+  room-abuse:
+    hash-key: ${ROOM_ABUSE_HASH_KEY:local-room-abuse-hash-key-change-me}
+    create:
+      window: ${ROOM_CREATE_RATE_WINDOW:1h}
+      ip-limit: ${ROOM_CREATE_IP_LIMIT:40}
+      actor-limit: ${ROOM_CREATE_ACTOR_LIMIT:8}
+    enter:
+      window: ${ROOM_ENTRY_RATE_WINDOW:10m}
+      ip-limit: ${ROOM_ENTRY_IP_LIMIT:120}
+      actor-limit: ${ROOM_ENTRY_ACTOR_LIMIT:30}
+    upload:
+      window: ${ROOM_UPLOAD_RATE_WINDOW:10m}
+      ip-limit: ${ROOM_UPLOAD_IP_LIMIT:240}
+      actor-limit: ${ROOM_UPLOAD_ACTOR_LIMIT:60}
   resend:
     api-key: ${RESEND_API_KEY:}
     base-url: ${RESEND_API_BASE_URL:https://api.resend.com}

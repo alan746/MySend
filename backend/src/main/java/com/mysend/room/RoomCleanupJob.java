@@ -35,6 +35,8 @@ public class RoomCleanupJob {
     private final EmailVerificationRepository verifications;
     private final PasswordVerificationRepository passwordVerifications;
     private final AuthenticationAttemptRepository authenticationAttempts;
+    private final RoomAbuseAttemptRepository roomAbuseAttempts;
+    private final RoomAbuseService roomAbuse;
     private final Clock clock;
 
     public RoomCleanupJob(
@@ -46,6 +48,8 @@ public class RoomCleanupJob {
             EmailVerificationRepository verifications,
             PasswordVerificationRepository passwordVerifications,
             AuthenticationAttemptRepository authenticationAttempts,
+            RoomAbuseAttemptRepository roomAbuseAttempts,
+            RoomAbuseService roomAbuse,
             Clock clock
     ) {
         this.rooms = rooms;
@@ -56,6 +60,8 @@ public class RoomCleanupJob {
         this.verifications = verifications;
         this.passwordVerifications = passwordVerifications;
         this.authenticationAttempts = authenticationAttempts;
+        this.roomAbuseAttempts = roomAbuseAttempts;
+        this.roomAbuse = roomAbuse;
         this.clock = clock;
     }
 
@@ -69,6 +75,7 @@ public class RoomCleanupJob {
         verifications.deleteExpired(now);
         passwordVerifications.deleteExpired(now);
         authenticationAttempts.deleteOlderThan(now.minus(Duration.ofDays(1)));
+        roomAbuseAttempts.deleteOlderThan(now.minus(roomAbuse.retention()));
         rooms.findClosedBefore(roomCutoff)
                 .forEach(room -> deleteRoom(room, roomCutoff, now));
     }

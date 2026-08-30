@@ -20,7 +20,7 @@ class ProductionConfigurationValidatorTest {
                 List.of("https://mysend.app"),
                 "https://mysend.app",
                 true,
-                Path.of("/app/uploads"),
+                absoluteUploadDirectory(),
                 "MySend <send@mysend.app>",
                 true,
                 false,
@@ -30,7 +30,11 @@ class ProductionConfigurationValidatorTest {
                 new AppProperties.Stripe("sk_live_value", "whsec_value", "price_value")
         );
         MockEnvironment environment = new MockEnvironment()
-                .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend");
+                .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend")
+                .withProperty(
+                        "mysend.room-abuse.hash-key",
+                        "production-room-abuse-hash-key-1234567890"
+                );
         ProductionConfigurationValidator validator =
                 new ProductionConfigurationValidator(properties, environment);
 
@@ -44,7 +48,7 @@ class ProductionConfigurationValidatorTest {
                 List.of("https://mysend.app"),
                 "https://mysend.app",
                 true,
-                Path.of("/app/uploads"),
+                absoluteUploadDirectory(),
                 "MySend <send@mysend.app>",
                 true,
                 false,
@@ -54,7 +58,11 @@ class ProductionConfigurationValidatorTest {
                 new AppProperties.Stripe("", "", "")
         );
         MockEnvironment environment = new MockEnvironment()
-                .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend");
+                .withProperty("spring.datasource.url", "jdbc:postgresql://db:5432/mysend")
+                .withProperty(
+                        "mysend.room-abuse.hash-key",
+                        "production-room-abuse-hash-key-1234567890"
+                );
         ProductionConfigurationValidator validator =
                 new ProductionConfigurationValidator(properties, environment);
 
@@ -97,6 +105,7 @@ class ProductionConfigurationValidatorTest {
                                 "MAIL_FROM must use a verified sender",
                                 "RESEND_API_KEY is required",
                                 "RESEND_API_BASE_URL must use HTTPS",
+                                "ROOM_ABUSE_HASH_KEY must contain at least 32 non-default characters",
                                 "STRIPE_SECRET_KEY is required",
                                 "STRIPE_WEBHOOK_SECRET is required",
                                 "STRIPE_PREMIUM_PRICE_ID is required"
@@ -138,5 +147,10 @@ class ProductionConfigurationValidatorTest {
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(10)
         );
+    }
+
+    private Path absoluteUploadDirectory() {
+        return Path.of(System.getProperty("user.dir"), "app", "uploads")
+                .toAbsolutePath();
     }
 }
