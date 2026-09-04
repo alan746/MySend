@@ -68,7 +68,8 @@ public class RoomController {
             HttpServletResponse response
     ) {
         RoomService.EnteredRoom entered = service.enter(request.accessCode(), request.password());
-        Duration duration = Duration.between(Instant.now(), entered.room().expiresAt());
+        Instant accessExpiresAt = entered.room().expiresAt().plus(RoomAccessService.REVISION_GRACE);
+        Duration duration = Duration.between(Instant.now(), accessExpiresAt);
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
                 CookieSupport.httpOnly(

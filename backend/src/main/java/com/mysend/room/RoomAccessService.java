@@ -5,12 +5,15 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.UUID;
 
 @Service
 public class RoomAccessService {
+
+    static final Duration REVISION_GRACE = Duration.ofHours(24);
 
     private final RoomAccessTokenRepository repository;
     private final SecureRandom random;
@@ -35,7 +38,7 @@ public class RoomAccessService {
                 UUID.randomUUID().toString(),
                 room.id(),
                 Hashing.sha256(token),
-                room.expiresAt(),
+                room.expiresAt().plus(REVISION_GRACE),
                 now
         );
         return token;

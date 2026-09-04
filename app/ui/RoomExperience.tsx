@@ -6,11 +6,14 @@ import {
   FormEvent,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import Link from "next/link";
 import { api, Room, RoomFile, roomDownloadUrl } from "../lib/api";
 import {
+  loadConsistentRoomSnapshot,
+  resolveClipboardAfterRefresh,
   RoomRevision,
   shouldConfirmClipboardReplacement,
   shouldNotifyRoomUpdate,
@@ -21,6 +24,15 @@ import { SiteHeader } from "./SiteHeader";
 type RoomExperienceProps = {
   code: string;
 };
+
+function fetchRoomSnapshot(code: string) {
+  const encodedCode = encodeURIComponent(code);
+  return loadConsistentRoomSnapshot<Room, RoomFile>({
+    loadRoom: () => api<Room>(`/api/rooms/${encodedCode}`),
+    loadFiles: () => api<RoomFile[]>(`/api/rooms/${encodedCode}/files`),
+    loadRevision: () => api<RoomRevision>(`/api/rooms/${encodedCode}/revision`),
+  });
+}
 
 export function RoomExperience({ code }: RoomExperienceProps) {
   const [room, setRoom] = useState<Room | null>(null);
@@ -38,20 +50,19 @@ export function RoomExperience({ code }: RoomExperienceProps) {
   const [pendingRevision, setPendingRevision] = useState<RoomRevision | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const roomVersion = room?.version;
+  const roomVersionRef = useRef(roomVersion);
 
   useEffect(() => {
     let active = true;
 
     async function loadRoom() {
       try {
-        const [loaded, loadedFiles] = await Promise.all([
-          api<Room>(`/api/rooms/${encodeURIComponent(code)}`),
-          api<RoomFile[]>(`/api/rooms/${encodeURIComponent(code)}/files`),
-        ]);
+        const snapshot = await fetchRoomSnapshot(code);
         if (!active) return;
-        setRoom(loaded);
-        setClipboard(loaded.clipboardText);
-        setFiles(loadedFiles);
+        roomVersionRef.current = snapshot.room.version;
+        setRoom(snapshot.room);
+        setClipboard(snapshot.room.clipboardText);
+        setFiles(snapshot.files);
         setPendingRevision(null);
         setNeedsEntry(false);
       } catch (caught) {
@@ -82,7 +93,12 @@ export function RoomExperience({ code }: RoomExperienceProps) {
         const revision = await api<RoomRevision>(
           `/api/rooms/${encodeURIComponent(code)}/revision`,
         );
-        if (active && shouldNotifyRoomUpdate(roomVersion, revision)) {
+        const currentVersion = roomVersionRef.current;
+        if (
+          active
+          && currentVersion !== undefined
+          && shouldNotifyRoomUpdate(currentVersion, revision)
+        ) {
           setPendingRevision(revision);
         }
       },
@@ -97,23 +113,37 @@ export function RoomExperience({ code }: RoomExperienceProps) {
     };
   }, [code, roomVersion]);
 
+  async function refreshRoomSnapshot(clipboardToReplace: string) {
+    const snapshot = await fetchRoomSnapshot(code);
+    roomVersionRef.current = snapshot.room.version;
+    setRoom(snapshot.room);
+    setFiles(snapshot.files);
+    setClipboard((current) =>
+      resolveClipboardAfterRefresh(
+        current,
+        clipboardToReplace,
+        snapshot.room.clipboardText,
+      ),
+    );
+    setPendingRevision(null);
+  }
+
   async function enterRoom(event: FormEvent) {
     event.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const entered = await api<Room>("/api/rooms/enter", {
+      await api<Room>("/api/rooms/enter", {
         method: "POST",
         body: JSON.stringify({ accessCode: code, password: password || null }),
       });
-      setRoom(entered);
-      setClipboard(entered.clipboardText);
+      const snapshot = await fetchRoomSnapshot(code);
+      roomVersionRef.current = snapshot.room.version;
+      setRoom(snapshot.room);
+      setClipboard(snapshot.room.clipboardText);
+      setFiles(snapshot.files);
       setPendingRevision(null);
       setNeedsEntry(false);
-      const loadedFiles = await api<RoomFile[]>(
-        `/api/rooms/${encodeURIComponent(code)}/files`,
-      );
-      setFiles(loadedFiles);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -123,18 +153,18 @@ export function RoomExperience({ code }: RoomExperienceProps) {
 
   async function saveClipboard() {
     if (!room) return;
+    const clipboardAtStart = clipboard;
     setError("");
     setSaving(true);
     try {
-      const updated = await api<Room>(
+      await api<Room>(
         `/api/rooms/${encodeURIComponent(code)}/clipboard`,
         {
           method: "PATCH",
           body: JSON.stringify({ text: clipboard, version: room.version }),
         },
       );
-      setRoom(updated);
-      setPendingRevision(null);
+      await refreshRoomSnapshot(clipboardAtStart);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -153,19 +183,18 @@ export function RoomExperience({ code }: RoomExperienceProps) {
   }
 
   async function upload(file: File) {
+    if (!room) return;
+    const savedClipboardAtStart = room.clipboardText;
     setError("");
     setUploading(true);
     const form = new FormData();
     form.set("file", file);
     try {
-      const stored = await api<RoomFile>(
+      await api<RoomFile>(
         `/api/rooms/${encodeURIComponent(code)}/files`,
         { method: "POST", body: form },
       );
-      setFiles((current) => [stored, ...current]);
-      const refreshed = await api<Room>(`/api/rooms/${encodeURIComponent(code)}`);
-      setRoom(refreshed);
-      setPendingRevision(null);
+      await refreshRoomSnapshot(savedClipboardAtStart);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -174,17 +203,16 @@ export function RoomExperience({ code }: RoomExperienceProps) {
   }
 
   async function deleteFile(fileId: string) {
+    if (!room) return;
     if (!window.confirm("Remove this file from the room?")) return;
+    const savedClipboardAtStart = room.clipboardText;
     setError("");
     try {
       await api<void>(
         `/api/rooms/${encodeURIComponent(code)}/files/${encodeURIComponent(fileId)}`,
         { method: "DELETE" },
       );
-      setFiles((current) => current.filter((file) => file.id !== fileId));
-      const refreshed = await api<Room>(`/api/rooms/${encodeURIComponent(code)}`);
-      setRoom(refreshed);
-      setPendingRevision(null);
+      await refreshRoomSnapshot(savedClipboardAtStart);
     } catch (caught) {
       setError(messageOf(caught));
     }
@@ -192,6 +220,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
 
   async function loadLatestRoom() {
     if (!room || !pendingRevision?.available) return;
+    const clipboardAtStart = clipboard;
     if (
       shouldConfirmClipboardReplacement(clipboard, room.clipboardText)
       && !window.confirm(
@@ -204,14 +233,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
     setError("");
     setRefreshing(true);
     try {
-      const [loaded, loadedFiles] = await Promise.all([
-        api<Room>(`/api/rooms/${encodeURIComponent(code)}`),
-        api<RoomFile[]>(`/api/rooms/${encodeURIComponent(code)}/files`),
-      ]);
-      setRoom(loaded);
-      setClipboard(loaded.clipboardText);
-      setFiles(loadedFiles);
-      setPendingRevision(null);
+      await refreshRoomSnapshot(clipboardAtStart);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -445,11 +467,11 @@ export function RoomExperience({ code }: RoomExperienceProps) {
 
       {room.owner && (
         <RoomSettings
+          key={`${room.visibility}:${room.accessLimit}:${room.createdAt}:${room.expiresAt}`}
           room={room}
           code={code}
-          onRoomChange={(updated) => {
-            setRoom(updated);
-            setPendingRevision(null);
+          onRoomChange={async () => {
+            await refreshRoomSnapshot(room.clipboardText);
           }}
         />
       )}
@@ -464,15 +486,13 @@ function RoomSettings({
 }: {
   room: Room;
   code: string;
-  onRoomChange: (room: Room) => void;
+  onRoomChange: (room: Room) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [visibility, setVisibility] = useState(room.visibility);
   const [password, setPassword] = useState("");
   const [accessLimit, setAccessLimit] = useState(room.accessLimit);
-  const initialMinutes = Math.round(
-    (new Date(room.expiresAt).getTime() - new Date(room.createdAt).getTime()) / 60_000,
-  );
+  const initialMinutes = roomLifetimeMinutes(room);
   const [lifetime, setLifetime] = useState(initialMinutes);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -502,7 +522,7 @@ function RoomSettings({
           }),
         },
       );
-      onRoomChange(updated);
+      await onRoomChange(updated);
       setPassword("");
       setOpen(false);
     } catch (caught) {
@@ -607,6 +627,12 @@ function formatCountdown(milliseconds: number) {
   return hours > 0
     ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`
     : `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
+function roomLifetimeMinutes(room: Room) {
+  return Math.round(
+    (new Date(room.expiresAt).getTime() - new Date(room.createdAt).getTime()) / 60_000,
+  );
 }
 
 function formatBytes(bytes: number) {

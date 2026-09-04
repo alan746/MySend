@@ -21,6 +21,13 @@ type RoomUpdateMonitorOptions = {
   documentTarget: MonitorEventTarget;
 };
 
+type ConsistentRoomSnapshotOptions<TRoom extends { version: number }, TFile> = {
+  loadRoom: () => Promise<TRoom>;
+  loadFiles: () => Promise<TFile[]>;
+  loadRevision: () => Promise<RoomRevision>;
+  maximumAttempts?: number;
+};
+
 const ROOM_UPDATE_INTERVAL_MS = 30_000;
 
 export function shouldNotifyRoomUpdate(
@@ -35,6 +42,41 @@ export function shouldConfirmClipboardReplacement(
   savedClipboard: string,
 ) {
   return clipboardDraft !== savedClipboard;
+}
+
+export function resolveClipboardAfterRefresh(
+  currentClipboard: string,
+  clipboardAtRefreshStart: string,
+  refreshedClipboard: string,
+) {
+  return currentClipboard === clipboardAtRefreshStart
+    ? refreshedClipboard
+    : currentClipboard;
+}
+
+export async function loadConsistentRoomSnapshot<
+  TRoom extends { version: number },
+  TFile,
+>({
+  loadRoom,
+  loadFiles,
+  loadRevision,
+  maximumAttempts = 3,
+}: ConsistentRoomSnapshotOptions<TRoom, TFile>) {
+  for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
+    const room = await loadRoom();
+    const files = await loadFiles();
+    const revision = await loadRevision();
+
+    if (!revision.available) {
+      throw new Error("This ShareRoom is no longer active.");
+    }
+    if (revision.version === room.version) {
+      return { room, files };
+    }
+  }
+
+  throw new Error("The room is changing quickly. Try loading the update again.");
 }
 
 export function startRoomUpdateMonitor({

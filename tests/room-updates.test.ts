@@ -67,6 +67,53 @@ test("requires confirmation before replacing an unsaved clipboard draft", async 
   assert.equal(shouldConfirmClipboardReplacement("local draft", "saved"), true);
 });
 
+test("keeps clipboard edits made while a room refresh is in flight", async () => {
+  const { resolveClipboardAfterRefresh } = await loadRoomUpdates();
+
+  assert.equal(
+    resolveClipboardAfterRefresh("draft after click", "draft before click", "remote"),
+    "draft after click",
+  );
+  assert.equal(
+    resolveClipboardAfterRefresh("draft before click", "draft before click", "remote"),
+    "remote",
+  );
+  assert.equal(
+    resolveClipboardAfterRefresh("local draft", "saved", "remote"),
+    "local draft",
+  );
+});
+
+test("retries a room snapshot when content changes between requests", async () => {
+  const { loadConsistentRoomSnapshot } = await loadRoomUpdates();
+  const rooms = [
+    { version: 4, clipboardText: "old" },
+    { version: 5, clipboardText: "latest" },
+  ];
+  const fileLists = [["old-file"], ["latest-file"]];
+  const revisions = [
+    { version: 5, available: true },
+    { version: 5, available: true },
+  ];
+  let roomCalls = 0;
+  let fileCalls = 0;
+  let revisionCalls = 0;
+
+  const snapshot = await loadConsistentRoomSnapshot({
+    loadRoom: async () => rooms[roomCalls++],
+    loadFiles: async () => fileLists[fileCalls++],
+    loadRevision: async () => revisions[revisionCalls++],
+  });
+
+  assert.deepEqual(snapshot, {
+    room: { version: 5, clipboardText: "latest" },
+    files: ["latest-file"],
+  });
+  assert.equal(roomCalls, 2);
+  assert.equal(fileCalls, 2);
+  assert.equal(revisionCalls, 2);
+});
+
 test("checks visible rooms on an interval and when focus returns", async () => {
   const { startRoomUpdateMonitor } = await loadRoomUpdates();
   const scheduler = new FakeScheduler();

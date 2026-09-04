@@ -8,12 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.Locale;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,6 +36,9 @@ class GuestRoomFlowTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private JdbcClient jdbc;
 
     @Test
     void guestCreatesARoomWithoutSigningIn() throws Exception {
@@ -125,6 +130,37 @@ class GuestRoomFlowTest {
 
         mvc.perform(get("/api/rooms/{code}/revision", accessCode))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void visitorCanSeeThatAnEnteredRoomExpiredNaturally() throws Exception {
+        String accessCode = createRoom("natural-expiry-owner");
+        Cookie access = enterRoom(accessCode);
+        long roomExpiry = jdbc.sql("select expires_at_ms from rooms where access_code = :accessCode")
+                .param("accessCode", accessCode)
+                .query(Long.class)
+                .single();
+        long accessExpiry = jdbc.sql("""
+                        select expires_at_ms from room_access_tokens
+                        where room_id = (select id from rooms where access_code = :accessCode)
+                        """)
+                .param("accessCode", accessCode)
+                .query(Long.class)
+                .single();
+        assertThat(accessExpiry - roomExpiry).isEqualTo(RoomAccessService.REVISION_GRACE.toMillis());
+        assertThat(access.getMaxAge()).isGreaterThan(24 * 60 * 60);
+
+        jdbc.sql("update rooms set expires_at_ms = 0 where access_code = :accessCode")
+                .param("accessCode", accessCode)
+                .update();
+
+        mvc.perform(get("/api/rooms/{code}", accessCode)
+                        .cookie(access))
+                .andExpect(status().isGone());
+        mvc.perform(get("/api/rooms/{code}/revision", accessCode)
+                        .cookie(access))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
     }
 
     private String createRoom(String deviceToken) throws Exception {
