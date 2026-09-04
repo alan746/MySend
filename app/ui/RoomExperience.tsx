@@ -10,6 +10,12 @@ import {
 } from "react";
 import Link from "next/link";
 import { api, Room, RoomFile, roomDownloadUrl } from "../lib/api";
+import {
+  RoomRevision,
+  shouldConfirmClipboardReplacement,
+  shouldNotifyRoomUpdate,
+  startRoomUpdateMonitor,
+} from "../lib/room-updates";
 import { SiteHeader } from "./SiteHeader";
 
 type RoomExperienceProps = {
@@ -26,9 +32,12 @@ export function RoomExperience({ code }: RoomExperienceProps) {
   const [needsEntry, setNeedsEntry] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pendingRevision, setPendingRevision] = useState<RoomRevision | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const roomVersion = room?.version;
 
   useEffect(() => {
     let active = true;
@@ -43,6 +52,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
         setRoom(loaded);
         setClipboard(loaded.clipboardText);
         setFiles(loadedFiles);
+        setPendingRevision(null);
         setNeedsEntry(false);
       } catch (caught) {
         if (!active) return;
@@ -64,6 +74,29 @@ export function RoomExperience({ code }: RoomExperienceProps) {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (roomVersion === undefined) return;
+    let active = true;
+    const stop = startRoomUpdateMonitor({
+      check: async () => {
+        const revision = await api<RoomRevision>(
+          `/api/rooms/${encodeURIComponent(code)}/revision`,
+        );
+        if (active && shouldNotifyRoomUpdate(roomVersion, revision)) {
+          setPendingRevision(revision);
+        }
+      },
+      isVisible: () => document.visibilityState === "visible",
+      scheduler: window,
+      windowTarget: window,
+      documentTarget: document,
+    });
+    return () => {
+      active = false;
+      stop();
+    };
+  }, [code, roomVersion]);
+
   async function enterRoom(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -75,6 +108,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
       });
       setRoom(entered);
       setClipboard(entered.clipboardText);
+      setPendingRevision(null);
       setNeedsEntry(false);
       const loadedFiles = await api<RoomFile[]>(
         `/api/rooms/${encodeURIComponent(code)}/files`,
@@ -100,6 +134,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
         },
       );
       setRoom(updated);
+      setPendingRevision(null);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -130,6 +165,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
       setFiles((current) => [stored, ...current]);
       const refreshed = await api<Room>(`/api/rooms/${encodeURIComponent(code)}`);
       setRoom(refreshed);
+      setPendingRevision(null);
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
@@ -148,8 +184,38 @@ export function RoomExperience({ code }: RoomExperienceProps) {
       setFiles((current) => current.filter((file) => file.id !== fileId));
       const refreshed = await api<Room>(`/api/rooms/${encodeURIComponent(code)}`);
       setRoom(refreshed);
+      setPendingRevision(null);
     } catch (caught) {
       setError(messageOf(caught));
+    }
+  }
+
+  async function loadLatestRoom() {
+    if (!room || !pendingRevision?.available) return;
+    if (
+      shouldConfirmClipboardReplacement(clipboard, room.clipboardText)
+      && !window.confirm(
+        "Load the latest room content? Your unsaved clipboard changes will be replaced.",
+      )
+    ) {
+      return;
+    }
+
+    setError("");
+    setRefreshing(true);
+    try {
+      const [loaded, loadedFiles] = await Promise.all([
+        api<Room>(`/api/rooms/${encodeURIComponent(code)}`),
+        api<RoomFile[]>(`/api/rooms/${encodeURIComponent(code)}/files`),
+      ]);
+      setRoom(loaded);
+      setClipboard(loaded.clipboardText);
+      setFiles(loadedFiles);
+      setPendingRevision(null);
+    } catch (caught) {
+      setError(messageOf(caught));
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -240,6 +306,34 @@ export function RoomExperience({ code }: RoomExperienceProps) {
         <div className="room-alert" role="alert">
           <span>{error}</span>
           <button type="button" onClick={() => setError("")}>Dismiss</button>
+        </div>
+      )}
+
+      {pendingRevision && (
+        <div
+          className={`room-update-notice ${pendingRevision.available ? "" : "is-closed"}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div>
+            <strong>
+              {pendingRevision.available
+                ? "New room content is available."
+                : "This ShareRoom is no longer active."}
+            </strong>
+            <span>
+              {pendingRevision.available
+                ? "Load the latest clipboard, files, and room details when you are ready."
+                : "The room was closed, expired, or reached its entry limit."}
+            </span>
+          </div>
+          {pendingRevision.available ? (
+            <button type="button" disabled={refreshing} onClick={loadLatestRoom}>
+              {refreshing ? "Loading…" : "Load update"}
+            </button>
+          ) : (
+            <Link href="/">Return home</Link>
+          )}
         </div>
       )}
 
@@ -350,7 +444,14 @@ export function RoomExperience({ code }: RoomExperienceProps) {
       </section>
 
       {room.owner && (
-        <RoomSettings room={room} code={code} onRoomChange={setRoom} />
+        <RoomSettings
+          room={room}
+          code={code}
+          onRoomChange={(updated) => {
+            setRoom(updated);
+            setPendingRevision(null);
+          }}
+        />
       )}
     </main>
   );

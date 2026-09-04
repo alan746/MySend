@@ -979,6 +979,60 @@ a {
   font-weight: 800;
 }
 
+.room-update-notice {
+  width: min(1380px, calc(100% - 64px));
+  min-height: 68px;
+  margin: 0 auto 18px;
+  padding: 13px 15px 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--lime);
+  border: 1px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.room-update-notice.is-closed {
+  background: #ffddd7;
+}
+
+.room-update-notice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.room-update-notice strong {
+  font-size: 13px;
+}
+
+.room-update-notice span {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.room-update-notice button,
+.room-update-notice a {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper-bright);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.room-update-notice button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .room-workspace {
   width: min(1380px, calc(100% - 64px));
   margin: 0 auto;
@@ -2063,6 +2117,7 @@ a {
   .how-section,
   .room-heading,
   .room-alert,
+  .room-update-notice,
   .room-workspace,
   .room-settings,
   .settings-heading,
@@ -2241,6 +2296,17 @@ a {
 
   .workspace-panel {
     min-height: 500px;
+  }
+
+  .room-update-notice {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .room-update-notice button,
+  .room-update-notice a {
+    width: 100%;
   }
 
   .clipboard-panel textarea {

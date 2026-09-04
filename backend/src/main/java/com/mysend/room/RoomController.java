@@ -107,6 +107,20 @@ public class RoomController {
         return RoomView.from(room, room.isOwnedBy(owner.ownerKey()));
     }
 
+    @GetMapping("/{accessCode}/revision")
+    RoomService.RoomRevision getRevision(
+            @PathVariable String accessCode,
+            @RequestHeader(name = "X-Room-Token", required = false) String roomToken,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        OwnerIdentity owner = identities.resolve(request, response);
+        String token = roomToken != null
+                ? roomToken
+                : RoomAccessCookie.read(request, accessCode).orElse(null);
+        return service.getRevision(accessCode, owner, token);
+    }
+
     @PatchMapping("/{accessCode}/clipboard")
     RoomView updateClipboard(
             @PathVariable String accessCode,

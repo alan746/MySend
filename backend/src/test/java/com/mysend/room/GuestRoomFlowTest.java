@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.util.Locale;
 
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -83,6 +84,47 @@ class GuestRoomFlowTest {
         mvc.perform(get("/api/rooms/{code}/files", secondCode)
                         .cookie(firstAccess, secondAccess))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void authorizedVisitorsCanCheckWhetherRoomStateChanged() throws Exception {
+        String deviceToken = "revision-owner";
+        String accessCode = createRoom(deviceToken);
+        Cookie ownerCookie = new Cookie("mysend_device", deviceToken);
+
+        mvc.perform(get("/api/rooms/{code}/revision", accessCode)
+                        .cookie(ownerCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(0))
+                .andExpect(jsonPath("$.available").value(true))
+                .andExpect(jsonPath("$.clipboardText").doesNotExist());
+
+        enterRoom(accessCode);
+
+        mvc.perform(get("/api/rooms/{code}/revision", accessCode)
+                        .cookie(ownerCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1))
+                .andExpect(jsonPath("$.available").value(true));
+
+        mvc.perform(delete("/api/rooms/{code}", accessCode)
+                        .with(browserRequest())
+                        .cookie(ownerCookie))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/rooms/{code}/revision", accessCode)
+                        .cookie(ownerCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.available").value(false));
+    }
+
+    @Test
+    void roomRevisionRequiresExistingRoomAccess() throws Exception {
+        String accessCode = createRoom("revision-private-owner");
+
+        mvc.perform(get("/api/rooms/{code}/revision", accessCode))
+                .andExpect(status().isNotFound());
     }
 
     private String createRoom(String deviceToken) throws Exception {

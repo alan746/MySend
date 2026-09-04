@@ -110,14 +110,20 @@ public class RoomService {
             OwnerIdentity owner,
             String roomToken
     ) {
-        Room room = findRetained(accessCode);
-        if (!room.isOwnedBy(owner.ownerKey()) && !roomAccess.canAccess(room, roomToken)) {
-            throw roomUnavailable();
-        }
+        Room room = getRetainedAuthorized(accessCode, owner, roomToken);
         if (room.isClosedAt(clock.instant())) {
             throw roomClosed();
         }
         return room;
+    }
+
+    public RoomRevision getRevision(
+            String accessCode,
+            OwnerIdentity owner,
+            String roomToken
+    ) {
+        Room room = getRetainedAuthorized(accessCode, owner, roomToken);
+        return new RoomRevision(room.version(), !room.isClosedAt(clock.instant()));
     }
 
     public List<Room> listOwned(OwnerIdentity owner) {
@@ -227,6 +233,18 @@ public class RoomService {
         return room;
     }
 
+    private Room getRetainedAuthorized(
+            String accessCode,
+            OwnerIdentity owner,
+            String roomToken
+    ) {
+        Room room = findRetained(accessCode);
+        if (!room.isOwnedBy(owner.ownerKey()) && !roomAccess.canAccess(room, roomToken)) {
+            throw roomUnavailable();
+        }
+        return room;
+    }
+
     private Room findRetained(String accessCode) {
         String normalized = AccessCodeGenerator.normalize(accessCode);
         if (!AccessCodeGenerator.isValid(normalized)) {
@@ -305,5 +323,8 @@ public class RoomService {
     }
 
     public record EnteredRoom(Room room, String token) {
+    }
+
+    public record RoomRevision(long version, boolean available) {
     }
 }
