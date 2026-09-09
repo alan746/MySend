@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Account, api, Room } from "../lib/api";
 import { SiteHeader } from "./SiteHeader";
+import { SiteFooter } from "./SiteFooter";
 
 type Mode = "create" | "join";
 
@@ -312,7 +313,7 @@ export function HomeExperience() {
         </div>
         <div className="plan-grid">
           <article className="plan-card">
-            <div><span>Free</span><strong>$0</strong></div>
+            <div><span>Free</span><strong>CA$0</strong></div>
             <p>Register once to see My ShareRooms and raise every limit.</p>
             <ul>
               <li>Guest mode: no login, 15 minutes</li>
@@ -324,24 +325,21 @@ export function HomeExperience() {
             <a href="/signup">Create account</a>
           </article>
           <article className="plan-card plan-card--premium">
-            <div><span>Premium</span><strong>$9.99<small>/mo</small></strong></div>
+            <div><span>Premium</span><strong>CA$9.99<small>/month</small></strong></div>
             <p>For review sessions, workshops, and heavier handoffs.</p>
             <ul>
               <li>5 active rooms</li>
               <li>3 hour maximum</li>
               <li>100,000 character clipboard</li>
               <li>5 GB per room</li>
+              <li>Renews monthly; cancel from account settings</li>
             </ul>
             <a href="/settings">See Premium</a>
           </article>
         </div>
       </section>
 
-      <footer className="site-footer">
-        <span>MySend</span>
-        <p>Share what matters. Keep nothing longer than necessary.</p>
-        <a href="/settings">Account &amp; settings</a>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

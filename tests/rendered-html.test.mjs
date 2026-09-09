@@ -84,9 +84,40 @@ test("server-renders the MySend create and join experience", async () => {
   assert.match(html, /Join with code/);
   assert.match(html, /MySend/);
   assert.match(html, /Premium/);
+  assert.match(html, /CA\$9\.99/);
+  assert.match(html, /Renews monthly/);
+  assert.match(html, /href="\/terms"/);
+  assert.match(html, /href="\/privacy"/);
+  assert.match(html, /href="\/refunds"/);
+  assert.match(html, /href="\/contact"/);
   assert.match(html, /href="\/login"/);
   assert.match(html, /href="\/signup"/);
   assert.doesNotMatch(html, /react-loading-skeleton/i);
+});
+
+test("server-renders public policies and support details", async () => {
+  const responses = await Promise.all([
+    render("/terms"),
+    render("/privacy"),
+    render("/refunds"),
+    render("/contact"),
+  ]);
+  for (const response of responses) assert.equal(response.status, 200);
+
+  const [terms, privacy, refunds, contact] = await Promise.all(
+    responses.map((response) => response.text()),
+  );
+
+  assert.match(terms, /Terms of service/);
+  assert.match(terms, /CA\$9\.99 per month/);
+  assert.match(privacy, /Privacy policy/);
+  assert.match(privacy, /does not sell personal information/);
+  assert.match(refunds, /Refunds &amp; cancellation/);
+  assert.match(refunds, /end of the current paid billing period/);
+  assert.match(contact, /Contact MySend/);
+  for (const html of [terms, privacy, refunds, contact]) {
+    assert.match(html, /mysend\.support@gmail\.com/);
+  }
 });
 
 test("server-renders a room-specific loading state", async () => {
