@@ -98,16 +98,18 @@ changing their original plan limits or expiry.
   <img src="docs/images/shareroom.png" alt="MySend clipboard, file board, access code, and countdown" width="100%">
 </p>
 
-> **Premium status:** the Premium plan and its limits are presented in the
-> product, but checkout and subscription management are temporarily disabled
-> while billing is being updated. Guest and Free sharing are live.
+> **Premium billing:** Premium subscription billing is fully implemented and
+> live through Stripe-hosted checkout. Signed-in members can upgrade for
+> CA$9.99 per month, manage or cancel the subscription in Stripe's hosted
+> billing portal, and receive Premium limits after the signed webhook confirms
+> the subscription state.
 
 ## Plans and limits
 
 Limits are captured when a room is created, so changing an account plan later
 does not unexpectedly reshape an already-open room.
 
-| Capability | Guest | Free account | Premium* |
+| Capability | Guest | Free account | Premium |
 | --- | ---: | ---: | ---: |
 | Price | No login | CA$0 | CA$9.99/month |
 | Active rooms | 1 | 2 | 5 |
@@ -116,9 +118,6 @@ does not unexpectedly reshape an already-open room.
 | Total files per room | 256 MiB | 1 GiB | 5 GiB |
 | Maximum single file | 50 MiB | 250 MiB | 1 GiB |
 | Successful visitor entries | 20 | 100 | 1,000 |
-
-\* Premium purchasing is currently unavailable; the limits remain the defined
-product target for the billing release.
 
 ## How the system is built
 
@@ -129,7 +128,7 @@ flowchart LR
     API --> DB["Railway PostgreSQL"]
     API --> Files["Mounted room-file volume"]
     API --> Mail["Resend HTTPS API"]
-    API -. billing disabled .-> Stripe["Stripe adapter"]
+    API --> Stripe["Stripe hosted checkout, portal, and webhooks"]
 ```
 
 The web and API deploy independently from the same repository. The web never
@@ -150,7 +149,7 @@ record reserved so the next cleanup pass can retry safely.
 | Email | Resend HTTPS API | Registration, password reset, and password change codes |
 | Security | Spring Security, BCrypt, HttpOnly cookies, origin checks, rate limits | Account sessions and room-scoped authorization |
 | Delivery | Docker, Railway, GitHub Actions | Independent production images, health checks, and pull-request verification |
-| Billing | Stripe adapter behind a disabled feature flag | Staged Premium checkout, portal, and webhook handling |
+| Billing | Stripe hosted checkout, customer portal, and signed webhooks | Premium subscription purchase, management, and plan synchronization |
 
 ## Repository map
 
@@ -238,7 +237,7 @@ Build the same production images checked by CI:
 docker build \
   --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.mysend.app \
   --build-arg NEXT_PUBLIC_SITE_URL=https://mysend.app \
-  --build-arg NEXT_PUBLIC_BILLING_ENABLED=false \
+  --build-arg NEXT_PUBLIC_BILLING_ENABLED=true \
   --tag mysend-web .
 
 docker build --tag mysend-api backend
