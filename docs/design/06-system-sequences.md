@@ -412,7 +412,7 @@ sequenceDiagram
     API-->>API: Reject immediately as ROOM_CLOSED
     Clock->>Job: Scheduled cleanup tick
     Job->>DB: Delete expired tokens and transient auth data
-    Job->>DB: Find rooms approaching 24-hour purge deadline
+    Job->>DB: Find already closed rooms in batches of 100
     loop Each purge-eligible room
         DB-->>Job: Room and file metadata
         Job->>Store: Delete each stored object

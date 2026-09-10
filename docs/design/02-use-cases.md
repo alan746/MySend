@@ -468,7 +468,8 @@ Physical-cleanup flow:
 
 1. Delete expired room grants, account sessions, verification challenges, and
    obsolete authentication-attempt records according to their policies.
-2. Find rooms whose logical closure is approaching the 24-hour purge deadline.
+2. Find rooms already logically closed at the start of the cleanup pass, in
+   batches of 100 ordered by room ID. Run every 15 minutes by default.
 3. For each room, enumerate all file metadata and request deletion of every
    stored object.
 4. Only after all objects are absent, delete file metadata, room content,
@@ -478,18 +479,18 @@ Physical-cleanup flow:
 Alternate flows:
 
 - **A1 - Storage deletion failure:** Retain retryable metadata and code
-  reservation; retry later and alert before the deadline.
+  reservation; continue with other rooms and retry on the next pass.
 - **A2 - Partial object deletion:** Continue idempotently from retained
   metadata; never restore room access.
 - **A3 - Concurrent room request:** Logical closure still denies the request;
   physical cleanup timing does not control authorization.
 - **A4 - Cleanup worker overlap:** Claim a room once or make every delete
   idempotent so duplicate cycles cannot corrupt accounting.
-- **A5 - Deadline risk:** Emit an operational alert with eligible room and lag
-  counts before 24 hours.
+- **A5 - Cleanup backlog:** Monitor eligible-room counts and purge lag when
+  failures, downtime, or processing time delay reclamation beyond one interval.
 
 **Success guarantee:** Closed content, credentials, metadata, and reusable code
-reservation are absent by the requirement deadline.
+reservation are absent after the next successful cleanup pass.
 
 **Minimum failure guarantee:** The room remains inaccessible and retained
 metadata is sufficient for safe retry.

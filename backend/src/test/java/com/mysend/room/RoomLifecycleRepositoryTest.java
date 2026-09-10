@@ -106,13 +106,13 @@ class RoomLifecycleRepositoryTest {
 
     @Test
     void manualAndExpiryClosureAreEligibleAtTheExactCleanupBoundary() {
-        Instant boundary = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
+        Instant boundary = NOW;
         rooms.insert(room("manual", "3000C", "device:mine", Plan.GUEST,
                 NOW.plus(Duration.ofHours(1)), boundary, 0, 3));
         rooms.insert(room("expired", "3001C", "device:mine", Plan.GUEST,
                 boundary, null, 0, 3));
 
-        Set<String> eligibleIds = rooms.findClosedBefore(boundary).stream()
+        Set<String> eligibleIds = rooms.findClosedBefore(boundary, "").stream()
                 .map(Room::id)
                 .collect(java.util.stream.Collectors.toSet());
 

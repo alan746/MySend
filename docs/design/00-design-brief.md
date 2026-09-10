@@ -150,7 +150,8 @@ baseline](01-requirements.md). At inception:
 - every plan has explicit clipboard, single-file, total-file, and successful
   entry limits;
 - registration codes expire after ten minutes;
-- closed room content has a 24-hour physical purge objective.
+- closed room content is eligible for physical purge on the next cleanup pass,
+  scheduled every 15 minutes by default.
 
 These are product decisions. Later design chooses mechanisms that satisfy them.
 

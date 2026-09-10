@@ -20,11 +20,6 @@ import java.time.Instant;
 @Component
 public class RoomCleanupJob {
 
-    static final Duration PURGE_DEADLINE = Duration.ofHours(24);
-    static final Duration DEFAULT_SCHEDULE_INTERVAL = Duration.ofMinutes(15);
-    static final Duration PURGE_ELIGIBILITY_AGE = PURGE_DEADLINE
-            .minus(DEFAULT_SCHEDULE_INTERVAL);
-
     private static final Logger log = LoggerFactory.getLogger(RoomCleanupJob.class);
 
     private final RoomRepository rooms;
@@ -68,7 +63,6 @@ public class RoomCleanupJob {
     @Scheduled(fixedDelayString = "${mysend.cleanup-interval-ms:900000}")
     void cleanExpiredRecords() {
         var now = clock.instant();
-        var roomCutoff = now.minus(PURGE_ELIGIBILITY_AGE);
 
         accessTokens.deleteExpired(now);
         sessions.deleteExpired(now);
@@ -76,16 +70,25 @@ public class RoomCleanupJob {
         passwordVerifications.deleteExpired(now);
         authenticationAttempts.deleteOlderThan(now.minus(Duration.ofDays(1)));
         roomAbuseAttempts.deleteOlderThan(now.minus(roomAbuse.retention()));
-        rooms.findClosedBefore(roomCutoff)
-                .forEach(room -> deleteRoom(room, roomCutoff, now));
+        String afterId = "";
+        while (true) {
+            var batch = rooms.findClosedBefore(now, afterId);
+            if (batch.isEmpty()) {
+                break;
+            }
+            for (Room room : batch) {
+                deleteRoom(room, now);
+            }
+            afterId = batch.getLast().id();
+        }
     }
 
-    private void deleteRoom(Room room, Instant cutoff, Instant now) {
+    private void deleteRoom(Room room, Instant now) {
         try {
             for (RoomFile file : files.findByRoomId(room.id())) {
                 fileStore.delete(file.storageKey());
             }
-            if (rooms.deleteByIdIfClosedBefore(room.id(), cutoff)) {
+            if (rooms.deleteByIdIfClosedBefore(room.id(), now)) {
                 log.info(
                         "Purged room {} at {} seconds of purge lag",
                         room.id(),

@@ -231,8 +231,9 @@ the first cleanup attempt.
 
 **Decision:** Evaluate logical closure during every protected room operation.
 Run idempotent cleanup separately, delete file objects before metadata/code
-reservation, retain retry state on failure, and alert before the 24-hour purge
-deadline.
+reservation, and retain retry state on failure. Closed rooms are eligible
+immediately and processed in batches of 100 on the next cleanup pass, with a
+15-minute default interval. Monitor failures and delayed reclamation.
 
 **Alternatives considered:** Scheduler-only expiry, immediate synchronous purge
 inside the user request, and deleting metadata before file objects.
@@ -266,7 +267,7 @@ consumes finite code capacity, so purge failure and traffic growth become
 capacity signals.
 
 **Revisit when:** Retained occupancy reaches 60,000, collision retries materially
-affect creation, or the 24-hour objective cannot be met. Options are shorter
+affect creation, or cleanup cannot keep pace with closures. Options are shorter
 reservation retention with a safe tombstone, a larger readable alphabet/format,
 or a separate generation component with equivalent stale-credential safety.
 
