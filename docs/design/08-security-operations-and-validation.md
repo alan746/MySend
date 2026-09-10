@@ -164,6 +164,22 @@ provides versioning. Restore instructions must be exercised, not merely written.
 
 ## Requirement verification matrix
 
+Web component tests exercise forms, pending states, authentication gates,
+provider failures, navigation, room version conflicts, and owner-only controls
+through DOM interactions with controlled API responses. Transport tests cover
+credentials, request headers, multipart bodies, deadlines, and error responses.
+These tests support FR-01-FR-26 and FR-29-FR-30 without replacing provider
+sandbox or full browser journey evidence.
+
+`npm run test:unit` runs the component and transport suite. `npm run
+test:coverage` measures all `app/**/*.ts` and `app/**/*.tsx` sources, including
+unloaded files, and writes reports under `coverage/`. The minimum thresholds
+are 80% lines/statements and 85% branches/functions. `npm run check` enforces
+these thresholds and also runs the production rendered-output checks.
+Rendered-output checks remain separate from the source coverage measurement.
+Report web and Java coverage separately because their line-counting methods
+differ.
+
 | Requirements | Primary evidence | Required negative/boundary evidence |
 | --- | --- | --- |
 | FR-01-FR-04 | UC-01 unit tests, room-creation API contract tests, Guest browser journey | Second Guest room, every invalid limit, public-plus-password ambiguity, code collision exhaustion, save failure |
