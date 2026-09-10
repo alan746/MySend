@@ -48,6 +48,16 @@ class RoomAbuseFilterTest {
     @Autowired
     private JdbcClient jdbc;
 
+    @Autowired
+    private jakarta.servlet.MultipartConfigElement multipartConfig;
+
+    @Test
+    void bindsServerUploadLimitsWithRoomForMultipartOverhead() {
+        assertThat(multipartConfig.getMaxFileSize()).isEqualTo(1_073_741_824L);
+        assertThat(multipartConfig.getMaxRequestSize()).isEqualTo(1_074_790_400L);
+        assertThat(multipartConfig.getFileSizeThreshold()).isZero();
+    }
+
     @BeforeEach
     void clearAttempts() {
         jdbc.sql("delete from room_abuse_attempts").update();
