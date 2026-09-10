@@ -70,7 +70,7 @@ class RoomCleanupJobTest {
 
     @Test
     void removesExpiredTokensSessionsVerificationsAndRoomFiles() throws IOException {
-        Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
+        Instant cutoff = NOW;
         Room room = expiredRoom("room-1");
         RoomFile file = new RoomFile(
                 "file-1",
@@ -81,7 +81,7 @@ class RoomCleanupJobTest {
                 2048,
                 cutoff.minusSeconds(60)
         );
-        when(rooms.findClosedBefore(cutoff)).thenReturn(List.of(room));
+        when(rooms.findClosedBefore(cutoff, "")).thenReturn(List.of(room));
         when(files.findByRoomId(room.id())).thenReturn(List.of(file));
 
         cleanupJob.cleanExpiredRecords();
@@ -101,7 +101,7 @@ class RoomCleanupJobTest {
 
     @Test
     void keepsRoomRecordWhenStoredFileCannotBeRemoved() throws IOException {
-        Instant cutoff = NOW.minus(RoomCleanupJob.PURGE_ELIGIBILITY_AGE);
+        Instant cutoff = NOW;
         Room room = expiredRoom("room-2");
         RoomFile file = new RoomFile(
                 "file-2",
@@ -112,7 +112,7 @@ class RoomCleanupJobTest {
                 1024,
                 cutoff.minusSeconds(60)
         );
-        when(rooms.findClosedBefore(cutoff)).thenReturn(List.of(room));
+        when(rooms.findClosedBefore(cutoff, "")).thenReturn(List.of(room));
         when(files.findByRoomId(room.id())).thenReturn(List.of(file));
         doThrow(new IOException("file is locked"))
                 .when(fileStore)
@@ -136,8 +136,8 @@ class RoomCleanupJobTest {
                 0,
                 "",
                 0,
-                NOW.minus(Duration.ofHours(26)),
-                NOW.minus(Duration.ofHours(25)),
+                NOW.minus(Duration.ofMinutes(15)),
+                NOW,
                 null,
                 0
         );

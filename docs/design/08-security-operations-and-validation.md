@@ -70,12 +70,19 @@ the confidentiality control when code guessing is an unacceptable risk.
 | Account session | Thirty days or logout | Scheduled deletion after expiry; immediate row deletion on logout |
 | Verification code | Ten minutes or successful consumption | Scheduled deletion after expiry |
 | Authentication attempt | Sliding rate-limit window | Older than one day |
-| Room content | Manual close, expiry, or entry exhaustion | Clipboard, filenames, files, and code reservation removed within 24 hours |
+| Room content | Manual close, expiry, or entry exhaustion | Eligible immediately; clipboard, filenames, files, and code reservation removed on the next successful cleanup pass |
 | Stored file | Same logical room closure | Deleted before its room record is purged |
 | Stripe event claim | Not user content | Retained for idempotency/audit until a separate policy is approved |
 
-The 24-hour purge objective includes cleanup retries. If an operational audit
-tombstone is required beyond it, the tombstone contains no clipboard text,
+Cleanup uses a 15-minute fixed delay by default, with no additional retention
+period after closure. Each query reads at most 100 rooms, advancing by room ID
+so failed deletions do not block later batches. File objects are removed before
+metadata and code reservations; failed rooms remain available for retry on the
+next pass. Normal reclamation occurs on the next cycle; processing time,
+downtime, or storage failures can extend it beyond 15 minutes. Deployment of
+this policy also reclaims previously retained closed rooms on the next pass.
+
+If an operational audit tombstone is required after cleanup, it contains no clipboard text,
 filename, file object, authorization token, or reusable access code.
 
 ## Deployment topology

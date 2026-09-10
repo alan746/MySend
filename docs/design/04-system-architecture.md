@@ -290,7 +290,7 @@ Before code is scaffolded:
 - each UC has an owning application component and required ports;
 - no domain/use-case rule requires Spring, JDBC, SMTP, Stripe, or storage types;
 - transaction and compensation boundaries are documented;
-- Guest-room claim and 24-hour purge are represented in component ownership;
+- Guest-room claim and next-cycle purge are represented in component ownership;
 - deployment and future scaling do not require in-memory session affinity;
 - unit tests can execute all policy with fake ports and a controlled clock.
 - every architecture driver links back to FR, QR, INV, or a documented

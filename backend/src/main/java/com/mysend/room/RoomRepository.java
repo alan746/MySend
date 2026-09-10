@@ -198,14 +198,17 @@ public class RoomRepository {
                 .update();
     }
 
-    public List<Room> findClosedBefore(Instant cutoff) {
+    public List<Room> findClosedBefore(Instant cutoff, String afterId) {
         return jdbc.sql("""
                         select * from rooms
-                        where (closed_at_ms is not null and closed_at_ms <= :cutoff)
-                           or expires_at_ms <= :cutoff
-                        order by expires_at_ms
+                        where ((closed_at_ms is not null and closed_at_ms <= :cutoff)
+                           or expires_at_ms <= :cutoff)
+                          and id > :afterId
+                        order by id
+                        limit 100
                         """)
                 .param("cutoff", cutoff.toEpochMilli())
+                .param("afterId", afterId)
                 .query(RoomRepository::mapRoom)
                 .list();
     }
