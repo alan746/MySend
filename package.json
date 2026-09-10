@@ -9,7 +9,10 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "node dist/standalone/server.js",
-    "test": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/room-updates.test.ts",
+    "test": "npm run test:coverage && npm run test:rendered",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:rendered": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/room-updates.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm test"
@@ -22,18 +25,24 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
+    "@vitest/coverage-v8": "^3.2.7",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
+    "jsdom": "^26.1.0",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
-    "vite": "8.0.13"
+    "vite": "8.0.13",
+    "vitest": "^3.2.7"
   },
   "type": "module"
 }
