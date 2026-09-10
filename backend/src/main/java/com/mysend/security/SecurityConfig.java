@@ -1,7 +1,9 @@
 package com.mysend.security;
 
 import com.mysend.config.AppProperties;
+import com.mysend.file.UploadAdmissionFilter;
 import com.mysend.room.RoomAbuseFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,7 +24,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             BrowserMutationFilter browserMutationFilter,
-            RoomAbuseFilter roomAbuseFilter
+            RoomAbuseFilter roomAbuseFilter,
+            UploadAdmissionFilter uploadAdmissionFilter
     ) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
@@ -37,7 +40,15 @@ public class SecurityConfig {
                         .anyRequest().denyAll())
                 .addFilterBefore(browserMutationFilter, AuthorizationFilter.class)
                 .addFilterAfter(roomAbuseFilter, BrowserMutationFilter.class)
+                .addFilterAfter(uploadAdmissionFilter, RoomAbuseFilter.class)
                 .build();
+    }
+
+    @Bean
+    FilterRegistrationBean<UploadAdmissionFilter> uploadAdmissionRegistration(UploadAdmissionFilter filter) {
+        var registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

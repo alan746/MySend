@@ -62,6 +62,23 @@ the confidentiality control when code guessing is an unacceptable risk.
 | Close room | No | No | Yes | No |
 | List My ShareRooms | No | No | Account-owned rooms only | Account-owned rooms only |
 
+## Upload admission
+
+The API applies origin checks and upload rate limits before checking room
+authorization, then admits at most four simultaneous multipart uploads per
+instance. `UPLOAD_MAX_CONCURRENT` overrides this positive limit. Excess
+transfers receive `429 UPLOAD_BUSY` with `Retry-After: 5`; they are not queued
+or parsed. Capacity is released on both successful and failed requests.
+The file use case checks room authorization again before storing content.
+
+`spring.servlet.multipart` sets a 1 GiB individual-file ceiling and a 1025 MiB
+request ceiling to accommodate multipart framing. Parts spool to temporary
+disk immediately. Guest, Free, and Premium storage quotas still apply in the
+file use case. Real HTTP tests cover exact file boundaries, total body limits,
+chunked uploads, and authorization before multipart parsing (FR-15, QR-03,
+QR-07). Operators must provision temporary disk separately from durable file
+storage and multiply the per-instance admission limit by the replica count.
+
 ## Retention and deletion
 
 | Record | Logical expiry | Physical cleanup |
