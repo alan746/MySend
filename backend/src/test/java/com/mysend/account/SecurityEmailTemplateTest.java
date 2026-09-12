@@ -7,58 +7,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SecurityEmailTemplateTest {
 
     @Test
-    void rendersBrandedRegistrationEmailWithoutRemoteImages() {
+    void rendersConciseRegistrationEmail() {
         SecurityEmailTemplate.Message message =
-                SecurityEmailTemplate.accountVerification(
-                        "123456",
-                        "https://mysend.app/"
-                );
+                SecurityEmailTemplate.accountVerification("123456");
 
-        assertThat(message.subject()).isEqualTo("Verify your MySend email");
+        assertThat(message.subject()).isEqualTo("Your MySend verification code: 123456");
         assertThat(message.html())
                 .contains("<!doctype html>")
-                .contains("ACCOUNT VERIFICATION")
-                .contains("Finish setting up your account.")
+                .contains("Your verification code is:")
                 .contains("123456")
-                .contains("href=\"https://mysend.app\"")
                 .contains("10 minutes")
-                .doesNotContain("<img");
+                .doesNotContain("<img")
+                .doesNotContain("href=");
         assertThat(message.text())
                 .contains("123456")
                 .contains("This code expires in 10 minutes")
-                .contains("Open MySend: https://mysend.app");
+                .contains("If you did not create a MySend account");
     }
 
     @Test
     void rendersDistinctPasswordSecurityCopy() {
         SecurityEmailTemplate.Message message =
-                SecurityEmailTemplate.passwordChange(
-                        "654321",
-                        "https://mysend.app"
-                );
+                SecurityEmailTemplate.passwordChange("654321");
 
-        assertThat(message.subject()).isEqualTo("Reset your MySend password");
+        assertThat(message.subject()).isEqualTo("Your MySend password code: 654321");
         assertThat(message.html())
-                .contains("PASSWORD SECURITY")
-                .contains("Confirm your password change.")
+                .contains("Your password code is:")
                 .contains("654321")
-                .contains("your password will stay the same");
+                .contains("you can ignore this email")
+                .doesNotContain("href=");
         assertThat(message.text())
                 .contains("654321")
-                .contains("your password will stay the same");
+                .contains("you can ignore this email");
     }
 
     @Test
     void escapesDynamicValuesInHtml() {
         SecurityEmailTemplate.Message message =
-                SecurityEmailTemplate.accountVerification(
-                        "<12345",
-                        "https://mysend.app/?next=\"signup\"&source=email"
-                );
+                SecurityEmailTemplate.accountVerification("<12345");
 
         assertThat(message.html())
                 .contains("&lt;12345")
-                .contains("next=&quot;signup&quot;&amp;source=email")
                 .doesNotContain("<12345");
     }
 }

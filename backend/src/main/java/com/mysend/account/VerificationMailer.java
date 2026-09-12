@@ -27,20 +27,14 @@ public class VerificationMailer {
     public boolean deliver(String email, String code) {
         return deliverMessage(
                 email,
-                SecurityEmailTemplate.accountVerification(
-                        code,
-                        properties.appBaseUrl()
-                )
+                SecurityEmailTemplate.accountVerification(code)
         );
     }
 
     public boolean deliverPasswordCode(String email, String code) {
         return deliverMessage(
                 email,
-                SecurityEmailTemplate.passwordChange(
-                        code,
-                        properties.appBaseUrl()
-                )
+                SecurityEmailTemplate.passwordChange(code)
         );
     }
 
