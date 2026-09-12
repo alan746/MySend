@@ -1739,20 +1739,25 @@ a {
 }
 
 .auth-code-field > span {
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px 12px;
 }
 
 .auth-code-field > span small {
-  min-width: 0;
-  flex: 1;
-  color: rgba(244, 240, 229, 0.58);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.4;
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
   letter-spacing: 0;
-  text-align: right;
+  text-align: left;
   text-transform: none;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -3786,8 +3791,10 @@ body {
   color: var(--muted);
 }
 
-.auth-code-field > span small {
-  color: var(--muted);
+@media (max-width: 380px) {
+  .auth-code-field > span small {
+    font-size: 11px;
+  }
 }
 
 .auth-focused-form .text-field input,

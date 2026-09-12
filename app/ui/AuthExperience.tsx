@@ -159,7 +159,7 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
                   <span>
                     Verification code
                     <small id="verification-code-hint">
-                      (Please check Junk or Promotions. The code may be there.)
+                      (Check your email’s Junk or Promotions folder)
                     </small>
                   </span>
                   <input
