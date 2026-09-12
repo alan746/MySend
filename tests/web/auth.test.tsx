@@ -52,6 +52,7 @@ it.each([true, false])("registers using a six-digit code (delivered: %s)", async
   const user = await enterDetails();
   await user.click(screen.getByRole("button", { name: "Send verification code" }));
   expect(await screen.findByRole("status")).toHaveTextContent(delivered ? "Check your email" : "Local delivery is active");
+  expect(screen.getByText("(Please check Junk or Promotions. The code may be there.)")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Finish setup" })).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Verification code"), { target: { value: "12a345678" } });
   expect(screen.getByLabelText("Verification code")).toHaveValue("123456");

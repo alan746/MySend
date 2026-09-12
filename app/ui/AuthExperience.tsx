@@ -156,8 +156,15 @@ export function AuthExperience({ mode }: { mode: AuthMode }) {
             ) : isVerification ? (
               <form className="auth-focused-form" onSubmit={verifyCode}>
                 <label className="code-field auth-code-field">
-                  <span>Verification code</span>
+                  <span>
+                    Verification code
+                    <small id="verification-code-hint">
+                      (Please check Junk or Promotions. The code may be there.)
+                    </small>
+                  </span>
                   <input
+                    aria-label="Verification code"
+                    aria-describedby="verification-code-hint"
                     value={code}
                     inputMode="numeric"
                     autoComplete="one-time-code"

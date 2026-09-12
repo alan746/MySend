@@ -1738,6 +1738,23 @@ a {
   text-align: center;
 }
 
+.auth-code-field > span {
+  align-items: baseline;
+  gap: 12px;
+}
+
+.auth-code-field > span small {
+  min-width: 0;
+  flex: 1;
+  color: rgba(244, 240, 229, 0.58);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: right;
+  text-transform: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .auth-story,
   .auth-panel {
@@ -3766,6 +3783,10 @@ body {
 }
 
 .auth-focused-form .text-field > span small {
+  color: var(--muted);
+}
+
+.auth-code-field > span small {
   color: var(--muted);
 }
 
