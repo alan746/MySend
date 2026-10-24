@@ -157,7 +157,7 @@ does not include clipboard text or visitor grant data.
 | `DELETE /api/rooms/{code}/files/{fileId}` | UC-05 / FR-17 | Owner only | `204` |
 
 Allowed extensions are `pdf`, `txt`, `md`, `java`, `py`, `c`, `h`, `cpp`,
-`hpp`, `doc`, `docx`, `jpg`, `jpeg`, `png`, `gif`, `webp`, `zip`, and `json`.
+`hpp`, `doc`, `docx`, `jpg`, `jpeg`, `png`, `gif`, `webp`, `zip`, `json`, and `mp4`.
 Extension allowlisting is a first barrier, not a substitute for malware
 scanning in public production.
 

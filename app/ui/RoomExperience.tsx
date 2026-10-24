@@ -419,7 +419,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
             <input
               type="file"
               disabled={uploading}
-              accept=".pdf,.txt,.md,.java,.py,.c,.h,.cpp,.hpp,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.zip,.json"
+              accept=".pdf,.txt,.md,.java,.py,.c,.h,.cpp,.hpp,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.zip,.json,.mp4"
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 const file = event.target.files?.[0];
                 if (file) void upload(file);
@@ -428,7 +428,7 @@ export function RoomExperience({ code }: RoomExperienceProps) {
             />
             <span className="upload-plus">+</span>
             <strong>{uploading ? "Uploading…" : "Drop a file or browse"}</strong>
-            <small>PDF, code, docs, images, ZIP · up to {formatBytes(singleFileLimit(room.plan))}</small>
+            <small>PDF, code, docs, images, ZIP, MP4 · up to {formatBytes(singleFileLimit(room.plan))}</small>
           </label>
 
           <div className="file-list">

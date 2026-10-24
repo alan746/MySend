@@ -120,8 +120,8 @@ they may be stricter but cannot weaken these account-flow limits.
 | FR-17 | Only the owner shall be able to delete a room file, and successful deletion shall release exactly that file's accounted bytes. | Owner deletion removes the file from later lists/downloads and decreases room usage once. Visitor deletion and repeated deletion do not alter usage. |
 
 Allowed launch extensions are `pdf`, `txt`, `md`, `java`, `py`, `c`, `h`,
-`cpp`, `hpp`, `doc`, `docx`, `jpg`, `jpeg`, `png`, `gif`, `webp`, `zip`, and
-`json`. This allowlist does not assert that file contents are safe.
+`cpp`, `hpp`, `doc`, `docx`, `jpg`, `jpeg`, `png`, `gif`, `webp`, `zip`, `json`, and
+`mp4`. This allowlist does not assert that file contents are safe.
 
 ### Registration, authentication, and My ShareRooms
 

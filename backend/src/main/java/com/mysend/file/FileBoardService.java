@@ -25,7 +25,7 @@ public class FileBoardService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             "pdf", "txt", "md", "java", "py", "c", "h", "cpp", "hpp",
-            "doc", "docx", "jpg", "jpeg", "png", "gif", "webp", "zip", "json"
+            "doc", "docx", "jpg", "jpeg", "png", "gif", "webp", "zip", "json", "mp4"
     );
 
     private final RoomService rooms;
